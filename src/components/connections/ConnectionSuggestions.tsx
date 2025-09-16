@@ -29,21 +29,21 @@ const mockConnections: Connection[] = [
   },
   {
     id: "2", 
-    name: "Maya Rodriguez",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b3e2?w=200&h=200&fit=crop&crop=face",
+    name: "Maja Rodriguez",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=face",
     mood: "Energetic & Goal-focused",
-    interests: ["Entrepreneurship", "Wellness", "Travel"],
-    aiReasoning: "Maya shares your drive for personal growth and has complementary skills in areas you're interested in exploring.",
+    interests: ["Travel", "Yoga", "Photography"],
+    aiReasoning: "Maja shares your drive for personal growth and has a vibrant energy that matches your adventurous spirit. She's passionate about wellness and exploring new cultures.",
     compatibilityScore: 87,
     lastActive: "1 hour ago"
   },
   {
     id: "3",
-    name: "Sam Jordan",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face",
+    name: "Janek Kluczek",
+    avatar: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=200&h=200&fit=crop&crop=face",
     mood: "Calm & Supportive", 
     interests: ["Psychology", "Books", "Meditation"],
-    aiReasoning: "Sam has a gentle, empathetic nature and could provide the emotional support and understanding you're seeking right now.",
+    aiReasoning: "Janek has a gentle, empathetic nature and could provide the emotional support and understanding you're seeking right now. His thoughtful approach to life resonates with your values.",
     compatibilityScore: 91,
     lastActive: "30 minutes ago"
   },
@@ -90,7 +90,7 @@ export function ConnectionSuggestions() {
           <CarouselContent>
             {mockConnections.map((connection) => (
               <CarouselItem key={connection.id} className="pl-4">
-                <Card className="p-6 shadow-card border-0 bg-card/80 backdrop-blur-sm hover:shadow-floating transition-all">
+                <Card className="p-6 shadow-card border-0 bg-card/80 backdrop-blur-sm hover:shadow-floating transition-all duration-300 hover:scale-105 cursor-pointer">
                   <div className="flex gap-6">
                     {/* Avatar and basic info */}
                     <div className="flex-shrink-0 space-y-3">
@@ -140,7 +140,7 @@ export function ConnectionSuggestions() {
 
                       {/* Actions */}
                       <div className="flex gap-3">
-                        <Button className="rounded-xl flex-1" size="sm">
+                        <Button className="rounded-xl flex-1" size="sm" onClick={() => window.location.href = `/chat/${connection.id}`}>
                           <MessageCircle className="w-4 h-4 mr-2" />
                           Start Conversation
                         </Button>
