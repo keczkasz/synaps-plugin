@@ -4,6 +4,7 @@ import { WelcomeScreen } from "@/components/welcome/WelcomeScreen";
 import { AIChatInterface } from "@/components/chat/AIChatInterface";
 import { ConnectionSuggestions } from "@/components/connections/ConnectionSuggestions";
 import { ProfileOverview } from "@/components/profile/ProfileOverview";
+import { MessagesHistory } from "@/components/messages/MessagesHistory";
 
 const Index = () => {
   const [currentSection, setCurrentSection] = useState<string>("welcome");
@@ -30,12 +31,8 @@ const Index = () => {
         return <ConnectionSuggestions />;
       case "profile":
         return <ProfileOverview />;
-      case "journal":
-        return (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <p className="text-muted-foreground">Journal section coming soon...</p>
-          </div>
-        );
+      case "messages":
+        return <MessagesHistory />;
       default:
         return <AIChatInterface />;
     }

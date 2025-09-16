@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { MessageCircle, Heart, Sparkles, Users } from "lucide-react";
 
 interface Connection {
@@ -19,6 +20,7 @@ const mockConnections: Connection[] = [
   {
     id: "1",
     name: "Alex Chen",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
     mood: "Creative & Reflective",
     interests: ["Art", "Philosophy", "Music"],
     aiReasoning: "You both value deep emotional expression and creative collaboration. Alex is currently exploring artistic projects and seeking meaningful conversations.",
@@ -28,6 +30,7 @@ const mockConnections: Connection[] = [
   {
     id: "2", 
     name: "Maya Rodriguez",
+    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b3e2?w=200&h=200&fit=crop&crop=face",
     mood: "Energetic & Goal-focused",
     interests: ["Entrepreneurship", "Wellness", "Travel"],
     aiReasoning: "Maya shares your drive for personal growth and has complementary skills in areas you're interested in exploring.",
@@ -37,11 +40,32 @@ const mockConnections: Connection[] = [
   {
     id: "3",
     name: "Sam Jordan",
+    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face",
     mood: "Calm & Supportive", 
     interests: ["Psychology", "Books", "Meditation"],
     aiReasoning: "Sam has a gentle, empathetic nature and could provide the emotional support and understanding you're seeking right now.",
     compatibilityScore: 91,
     lastActive: "30 minutes ago"
+  },
+  {
+    id: "4",
+    name: "Elena Vasquez",
+    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face",
+    mood: "Adventurous & Curious",
+    interests: ["Photography", "Culture", "Cooking"],
+    aiReasoning: "Elena has a vibrant energy and shares your curiosity about the world. She's looking for genuine connections through shared experiences.",
+    compatibilityScore: 89,
+    lastActive: "15 minutes ago"
+  },
+  {  
+    id: "5",
+    name: "Marcus Thompson",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face",
+    mood: "Focused & Inspiring",
+    interests: ["Technology", "Innovation", "Mentoring"],
+    aiReasoning: "Marcus combines technical expertise with emotional intelligence, making him perfect for both professional and personal growth discussions.",
+    compatibilityScore: 92,
+    lastActive: "1 hour ago"
   }
 ];
 
@@ -60,74 +84,82 @@ export function ConnectionSuggestions() {
         </p>
       </div>
 
-      {/* Suggestions */}
-      <div className="space-y-4">
-        {mockConnections.map((connection) => (
-          <Card key={connection.id} className="p-6 shadow-card border-0 bg-card/80 backdrop-blur-sm hover:shadow-floating transition-all">
-            <div className="flex gap-6">
-              {/* Avatar and basic info */}
-              <div className="flex-shrink-0 space-y-3">
-                <Avatar className="w-16 h-16">
-                  <AvatarImage src={connection.avatar} />
-                  <AvatarFallback className="bg-gradient-primary text-white text-lg font-medium">
-                    {connection.name.split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="text-center">
-                  <div className="text-xs text-muted-foreground">Compatibility</div>
-                  <div className="text-lg font-bold text-primary">{connection.compatibilityScore}%</div>
-                </div>
-              </div>
+      {/* Suggestions - Tinder-style Carousel */}
+      <div className="relative">
+        <Carousel className="w-full max-w-2xl mx-auto">
+          <CarouselContent>
+            {mockConnections.map((connection) => (
+              <CarouselItem key={connection.id} className="pl-4">
+                <Card className="p-6 shadow-card border-0 bg-card/80 backdrop-blur-sm hover:shadow-floating transition-all">
+                  <div className="flex gap-6">
+                    {/* Avatar and basic info */}
+                    <div className="flex-shrink-0 space-y-3">
+                      <Avatar className="w-20 h-20 ring-4 ring-border/20">
+                        <AvatarImage src={connection.avatar} />
+                        <AvatarFallback className="bg-gradient-primary text-white text-xl font-medium">
+                          {connection.name.split(' ').map(n => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="text-center">
+                        <div className="text-xs text-muted-foreground">Compatibility</div>
+                        <div className="text-xl font-bold text-primary">{connection.compatibilityScore}%</div>
+                      </div>
+                    </div>
 
-              {/* Content */}
-              <div className="flex-1 space-y-4">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-semibold text-foreground">{connection.name}</h3>
-                    <Badge variant="outline" className="rounded-full text-xs bg-emotion-calm border-0">
-                      {connection.mood}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">Active {connection.lastActive}</span>
-                  </div>
-                  
-                  {/* Interests */}
-                  <div className="flex gap-2 mb-3">
-                    {connection.interests.map((interest) => (
-                      <Badge key={interest} variant="secondary" className="rounded-full text-xs">
-                        {interest}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
+                    {/* Content */}
+                    <div className="flex-1 space-y-4">
+                      <div>
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-xl font-semibold text-foreground">{connection.name}</h3>
+                          <Badge variant="outline" className="rounded-full text-xs bg-emotion-calm border-0">
+                            {connection.mood}
+                          </Badge>
+                        </div>
+                        <span className="text-sm text-muted-foreground">Active {connection.lastActive}</span>
+                        
+                        {/* Interests */}
+                        <div className="flex gap-2 mt-3">
+                          {connection.interests.map((interest) => (
+                            <Badge key={interest} variant="secondary" className="rounded-full text-xs">
+                              {interest}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
 
-                {/* AI Reasoning */}
-                <div className="p-4 rounded-2xl bg-gradient-warm">
-                  <div className="flex items-start gap-2">
-                    <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                    <div>
-                      <div className="text-xs font-medium text-primary mb-1">AI Insight</div>
-                      <p className="text-sm text-foreground leading-relaxed">{connection.aiReasoning}</p>
+                      {/* AI Reasoning */}
+                      <div className="p-4 rounded-2xl bg-gradient-warm">
+                        <div className="flex items-start gap-2">
+                          <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                          <div>
+                            <div className="text-xs font-medium text-primary mb-1">AI Insight</div>
+                            <p className="text-sm text-foreground leading-relaxed">{connection.aiReasoning}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-3">
+                        <Button className="rounded-xl flex-1" size="sm">
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          Start Conversation
+                        </Button>
+                        <Button variant="outline" size="sm" className="rounded-xl">
+                          <Heart className="w-4 h-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" className="rounded-xl">
+                          <Users className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3">
-                  <Button className="rounded-xl flex-1" size="sm">
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Start Conversation
-                  </Button>
-                  <Button variant="outline" size="sm" className="rounded-xl">
-                    <Heart className="w-4 h-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" className="rounded-xl">
-                    <Users className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </Card>
-        ))}
+                </Card>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="left-4" />
+          <CarouselNext className="right-4" />
+        </Carousel>
       </div>
 
       {/* Browse More */}

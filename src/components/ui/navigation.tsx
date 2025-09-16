@@ -12,7 +12,7 @@ export function Navigation({ activeSection = "chat", onSectionChange }: Navigati
     { id: "chat", label: "AI Chat", icon: MessageSquare },
     { id: "connections", label: "Connections", icon: Users },
     { id: "profile", label: "Profile", icon: User },
-    { id: "journal", label: "Journal", icon: BookOpen },
+    { id: "messages", label: "Messages", icon: BookOpen },
   ];
 
   return (
