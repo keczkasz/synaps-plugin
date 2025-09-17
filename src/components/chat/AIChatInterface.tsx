@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, Sparkles } from "lucide-react";
+import { Send, Sparkles, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Message {
   id: string;
@@ -13,6 +16,8 @@ interface Message {
 }
 
 export function AIChatInterface() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -22,9 +27,10 @@ export function AIChatInterface() {
     }
   ]);
   const [inputValue, setInputValue] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isLoading || !user) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -33,29 +39,45 @@ export function AIChatInterface() {
       timestamp: new Date(),
     };
 
+    const currentInput = inputValue;
     setMessages(prev => [...prev, userMessage]);
     setInputValue("");
+    setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      // Get conversation history for context
+      const conversationHistory = messages.map(msg => ({
+        role: msg.isAI ? 'assistant' : 'user',
+        content: msg.content
+      }));
+
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: {
+          message: currentInput,
+          conversationHistory
+        }
+      });
+
+      if (error) throw error;
+
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: getAIResponse(inputValue),
+        content: data.response,
         isAI: true,
         timestamp: new Date(),
       };
+      
       setMessages(prev => [...prev, aiResponse]);
-    }, 1500);
-  };
-
-  const getAIResponse = (userInput: string): string => {
-    const responses = [
-      "I understand you're feeling that way. It sounds like you might benefit from connecting with someone who shares similar experiences. Can you tell me more about what's on your mind?",
-      "That's really insightful. Based on what you're sharing, I'm sensing you might enjoy creative collaboration or deep conversations. What kind of connection are you hoping for today?",
-      "Thank you for being so open. I'm getting a sense of your emotional landscape. Would you be interested in connecting with someone who has complementary goals or similar challenges?",
-      "I appreciate your honesty. It seems like you're in a reflective mood. I might have some perfect matches for meaningful conversations. What draws you to connect with others?"
-    ];
-    return responses[Math.floor(Math.random() * responses.length)];
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to get AI response. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -126,9 +148,13 @@ export function AIChatInterface() {
             onClick={handleSendMessage}
             size="lg"
             className="rounded-2xl px-6 shadow-card"
-            disabled={!inputValue.trim()}
+            disabled={!inputValue.trim() || isLoading}
           >
-            <Send className="w-5 h-5" />
+            {isLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
           </Button>
         </div>
       </div>
