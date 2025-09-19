@@ -134,10 +134,13 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          connection_goals: string | null
           created_at: string
+          current_intentions: string | null
           display_name: string | null
           id: string
           interests: string[] | null
+          last_conversation_topics: string[] | null
           mood: string | null
           updated_at: string
           user_id: string
@@ -145,10 +148,13 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          connection_goals?: string | null
           created_at?: string
+          current_intentions?: string | null
           display_name?: string | null
           id?: string
           interests?: string[] | null
+          last_conversation_topics?: string[] | null
           mood?: string | null
           updated_at?: string
           user_id: string
@@ -156,11 +162,50 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          connection_goals?: string | null
           created_at?: string
+          current_intentions?: string | null
           display_name?: string | null
           id?: string
           interests?: string[] | null
+          last_conversation_topics?: string[] | null
           mood?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          created_at: string
+          daily_goals: string | null
+          desired_conversation_type: string | null
+          energy_level: number | null
+          id: string
+          session_date: string
+          topics_of_interest: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_goals?: string | null
+          desired_conversation_type?: string | null
+          energy_level?: number | null
+          id?: string
+          session_date?: string
+          topics_of_interest?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_goals?: string | null
+          desired_conversation_type?: string | null
+          energy_level?: number | null
+          id?: string
+          session_date?: string
+          topics_of_interest?: string[] | null
           updated_at?: string
           user_id?: string
         }

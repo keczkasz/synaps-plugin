@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Send, Sparkles, Loader2 } from "lucide-react";
+import { Send, Sparkles, Loader2, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
+import { PlatformIntegrations } from "./PlatformIntegrations";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface Message {
   id: string;
@@ -21,13 +23,14 @@ export function AIChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      content: "Hello! I'm your AI companion here to help you connect with like-minded people. Let's start by understanding how you're feeling today and what you're looking for. How are you doing right now?",
+      content: "Hi! I'm here to help you connect with the right person to solve the right problem faster than any tool on Earth. Who do you want to talk to today? What's on your mind that you'd like to discuss?",
       isAI: true,
       timestamp: new Date(),
     }
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showIntegrations, setShowIntegrations] = useState(false);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading || !user) return;
@@ -84,15 +87,31 @@ export function AIChatInterface() {
     <div className="flex flex-col h-full max-w-4xl mx-auto">
       {/* Header */}
       <div className="p-6 bg-gradient-warm border-b border-border/50">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-primary flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-white" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-primary flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">AI Companion</h2>
+              <p className="text-sm text-muted-foreground">Connect faster than any tool on Earth</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">AI Companion</h2>
-            <p className="text-sm text-muted-foreground">Connect with the right person to solve the right problem faster than any tool on Earth</p>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowIntegrations(!showIntegrations)}
+            className="rounded-xl"
+          >
+            <Settings className="w-4 h-4" />
+          </Button>
         </div>
+        
+        <Collapsible open={showIntegrations} onOpenChange={setShowIntegrations}>
+          <CollapsibleContent className="mt-4">
+            <PlatformIntegrations />
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
       {/* Messages */}

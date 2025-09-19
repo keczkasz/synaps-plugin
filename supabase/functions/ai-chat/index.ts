@@ -34,20 +34,23 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Create AI prompt that analyzes conversation and generates insights
-    const systemPrompt = `You are an empathetic AI companion designed to help people connect with others. Your responses should be:
+    // Create AI prompt for goal-oriented connection facilitation
+    const systemPrompt = `You are a smart connection facilitator who helps users find the right people to talk to. Your goal is to understand WHO they want to connect with today and WHAT they want to discuss, then help them achieve that connection quickly.
 
-1. Warm, understanding, and emotionally intelligent
-2. Focused on helping the user understand themselves and their connection needs
-3. Encouraging meaningful relationships and personal growth
+Key guidelines:
+- Focus on immediate connection goals: "Who do you want to talk to today?"
+- Identify specific topics, interests, or problems they want to discuss  
+- Be direct and action-oriented - get to the point quickly
+- Ask about their current mood, interests, and what kind of conversation they're seeking
+- Help them clarify their intentions so you can match them with the perfect person
+- Be helpful and efficient, not overly emotional or therapeutic
+- Your mission: Connect with the right person to solve the right problem faster than any tool on Earth
 
-After each response, analyze the conversation to generate insights about the user's:
-- Emotional patterns and current state
-- Communication style and preferences  
-- Connection goals and relationship needs
-- Personality traits and interests
-
-Be genuine, avoid being overly clinical, and focus on helping them connect authentically with others.`;
+After each response, analyze the conversation to extract:
+- Current conversation topics they want to discuss today
+- Type of person they want to connect with right now
+- Specific goals (learning, brainstorming, venting, advice, etc.)
+- Energy level and mood for matching compatibility`;
 
     console.log('Sending request to OpenAI with message:', message);
 
@@ -79,12 +82,14 @@ Be genuine, avoid being overly clinical, and focus on helping them connect authe
 
     const aiResponse = aiData.choices[0].message.content;
 
-    // Generate insights based on the full conversation
-    const insightPrompt = `Based on this conversation, provide a JSON analysis of the user with the following structure:
+    // Generate insights focused on connection intentions
+    const insightPrompt = `Based on this conversation, extract the user's current connection intentions and provide a JSON analysis:
 {
-  "emotional_patterns": "Brief insight about their emotional state and patterns (max 150 chars)",
-  "communication_style": "Analysis of how they communicate and interact (max 150 chars)", 
-  "connection_goals": "What they seem to be looking for in connections (max 150 chars)",
+  "current_intentions": "What they want to discuss today (max 100 chars)",
+  "connection_goals": "Type of person they want to connect with (max 100 chars)",
+  "conversation_topics": ["topic1", "topic2", "topic3"],
+  "desired_conversation_type": "advice/brainstorming/venting/learning/social",
+  "energy_level": 7,
   "personality_traits": ["trait1", "trait2", "trait3"],
   "mood_score": 0.8,
   "interests": ["interest1", "interest2", "interest3"]
@@ -95,7 +100,7 @@ ${conversationHistory.map((msg: any) => `${msg.role}: ${msg.content}`).join('\n'
 User: ${message}
 AI: ${aiResponse}
 
-Provide only the JSON, no other text.`;
+Return only valid JSON without markdown formatting or code blocks.`;
 
     const insightResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -116,14 +121,23 @@ Provide only the JSON, no other text.`;
 
     if (insightData.choices?.[0]?.message?.content) {
       try {
-        const insights = JSON.parse(insightData.choices[0].message.content);
+        let jsonContent = insightData.choices[0].message.content.trim();
+        
+        // Remove markdown code blocks if present
+        if (jsonContent.startsWith('```json')) {
+          jsonContent = jsonContent.replace(/```json\n?/, '').replace(/\n?```$/, '');
+        } else if (jsonContent.startsWith('```')) {
+          jsonContent = jsonContent.replace(/```\n?/, '').replace(/\n?```$/, '');
+        }
+        
+        const insights = JSON.parse(jsonContent);
         
         // Store insights in database
         const { error: insertError } = await supabase
           .from('ai_insights')
           .insert({
             user_id: user.id,
-            insight_type: 'conversation_analysis',
+            insight_type: 'connection_intentions',
             content: aiResponse,
             metadata: insights
           });
@@ -132,20 +146,41 @@ Provide only the JSON, no other text.`;
           console.error('Error storing insights:', insertError);
         }
 
-        // Update user profile with latest insights
+        // Update user profile with latest insights and intentions
         const { error: profileError } = await supabase
           .from('profiles')
           .upsert({
             user_id: user.id,
             mood: insights.mood_score > 0.7 ? 'positive' : insights.mood_score > 0.4 ? 'neutral' : 'reflective',
-            interests: insights.interests || []
+            interests: insights.interests || [],
+            current_intentions: insights.current_intentions,
+            connection_goals: insights.connection_goals,
+            last_conversation_topics: insights.conversation_topics || []
           });
 
         if (profileError) {
           console.error('Error updating profile:', profileError);
         }
+
+        // Create or update today's session
+        const { error: sessionError } = await supabase
+          .from('user_sessions')
+          .upsert({
+            user_id: user.id,
+            session_date: new Date().toISOString().split('T')[0],
+            daily_goals: insights.current_intentions,
+            desired_conversation_type: insights.desired_conversation_type,
+            topics_of_interest: insights.conversation_topics || [],
+            energy_level: insights.energy_level || 5
+          });
+
+        if (sessionError) {
+          console.error('Error updating session:', sessionError);
+        }
+
       } catch (parseError) {
         console.error('Error parsing insights JSON:', parseError);
+        console.error('Raw content:', insightData.choices[0].message.content);
       }
     }
 

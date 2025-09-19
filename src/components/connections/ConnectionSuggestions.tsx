@@ -3,73 +3,22 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { MessageCircle, Heart, Sparkles, Users } from "lucide-react";
-
-interface Connection {
-  id: string;
-  name: string;
-  avatar?: string;
-  mood: string;
-  interests: string[];
-  aiReasoning: string;
-  compatibilityScore: number;
-  lastActive: string;
-}
-
-const mockConnections: Connection[] = [
-  {
-    id: "1",
-    name: "Alex Chen",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face",
-    mood: "Creative & Reflective",
-    interests: ["Art", "Philosophy", "Music"],
-    aiReasoning: "You both value deep emotional expression and creative collaboration. Alex is currently exploring artistic projects and seeking meaningful conversations.",
-    compatibilityScore: 94,
-    lastActive: "2 hours ago"
-  },
-  {
-    id: "2", 
-    name: "Maja Rodriguez",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=face",
-    mood: "Energetic & Goal-focused",
-    interests: ["Travel", "Yoga", "Photography"],
-    aiReasoning: "Maja shares your drive for personal growth and has a vibrant energy that matches your adventurous spirit. She's passionate about wellness and exploring new cultures.",
-    compatibilityScore: 87,
-    lastActive: "1 hour ago"
-  },
-  {
-    id: "3",
-    name: "Janek Kluczek",
-    avatar: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=200&h=200&fit=crop&crop=face",
-    mood: "Calm & Supportive", 
-    interests: ["Psychology", "Books", "Meditation"],
-    aiReasoning: "Janek has a gentle, empathetic nature and could provide the emotional support and understanding you're seeking right now. His thoughtful approach to life resonates with your values.",
-    compatibilityScore: 91,
-    lastActive: "30 minutes ago"
-  },
-  {
-    id: "4",
-    name: "Elena Vasquez",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop&crop=face",
-    mood: "Adventurous & Curious",
-    interests: ["Photography", "Culture", "Cooking"],
-    aiReasoning: "Elena has a vibrant energy and shares your curiosity about the world. She's looking for genuine connections through shared experiences.",
-    compatibilityScore: 89,
-    lastActive: "15 minutes ago"
-  },
-  {  
-    id: "5",
-    name: "Marcus Thompson",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=face",
-    mood: "Focused & Inspiring",
-    interests: ["Technology", "Innovation", "Mentoring"],
-    aiReasoning: "Marcus combines technical expertise with emotional intelligence, making him perfect for both professional and personal growth discussions.",
-    compatibilityScore: 92,
-    lastActive: "1 hour ago"
-  }
-];
+import { MessageCircle, Heart, Sparkles, Users, Loader2 } from "lucide-react";
+import { useConnectionMatching } from "@/hooks/useConnectionMatching";
 
 export function ConnectionSuggestions() {
+  const { connections, userIntentions, loading } = useConnectionMatching();
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto p-6 flex items-center justify-center min-h-[400px]">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span>Finding your perfect matches...</span>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       {/* Header */}
@@ -80,7 +29,10 @@ export function ConnectionSuggestions() {
         </div>
         <h2 className="text-2xl font-bold text-foreground">Perfect Matches for You</h2>
         <p className="text-muted-foreground max-w-lg mx-auto">
-          Based on your recent conversations, here are people who might resonate with your current emotional state and goals.
+          {userIntentions?.current_intentions 
+            ? `Based on your interest in "${userIntentions.current_intentions}", here are your perfect matches:`
+            : "Here are people who might be perfect for meaningful conversations."
+          }
         </p>
       </div>
 
@@ -88,7 +40,7 @@ export function ConnectionSuggestions() {
       <div className="relative">
         <Carousel className="w-full max-w-2xl mx-auto">
           <CarouselContent>
-            {mockConnections.map((connection) => (
+            {connections.map((connection) => (
               <CarouselItem key={connection.id} className="pl-4">
                 <Card className="p-6 shadow-card border-0 bg-card/80 backdrop-blur-sm hover:shadow-floating transition-all duration-300 hover:scale-105 cursor-pointer">
                   <div className="flex gap-6">
