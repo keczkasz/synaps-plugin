@@ -79,21 +79,6 @@ serve(async (req) => {
       }
 
       conversationId = newConversation.id;
-
-      // Create AI introduction message
-      const aiIntroMessage = `🤖 Cześć! Łączę was, bo widzę wspólne zainteresowania! ${aiReasoning} Mam nadzieję, że będziecie mieli świetną rozmowę! 😊`;
-
-      const { error: messageError } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_id: 'ai-assistant',
-          content: aiIntroMessage
-        });
-
-      if (messageError) {
-        console.error('Error creating AI message:', messageError);
-      }
     }
 
     return new Response(
