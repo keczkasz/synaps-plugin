@@ -143,27 +143,7 @@ const Chat = () => {
         .single();
 
       setOtherUser(profile);
-      
-      // Add AI introduction message if this is a new conversation with no messages
-      let messagesWithIntro = conversationData.messages || [];
-      if (messagesWithIntro.length === 0) {
-        const { data: connection } = await supabase
-          .from('connections')
-          .select('ai_reasoning')
-          .or(`and(user_id.eq.${user.id},connected_user_id.eq.${otherUserId}),and(user_id.eq.${otherUserId},connected_user_id.eq.${user.id})`)
-          .single();
-
-        const aiIntroMessage = {
-          id: 'ai-intro',
-          content: `🤖 Cześć! Łączę was, bo widzę wspólne zainteresowania! ${connection?.ai_reasoning || 'Mam nadzieję, że będziecie mieli świetną rozmowę!'} 😊`,
-          sender_id: 'ai-assistant',
-          created_at: new Date().toISOString()
-        };
-        
-        messagesWithIntro = [aiIntroMessage];
-      }
-      
-      setMessages(messagesWithIntro);
+      setMessages(conversationData.messages || []);
     } catch (error) {
       console.error('Error fetching conversation:', error);
     } finally {
