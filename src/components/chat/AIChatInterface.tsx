@@ -20,20 +20,95 @@ interface Message {
 export function AIChatInterface() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      content: "Hi! I'm here to help you connect with the right person to solve the right problem faster than any tool on Earth. Who do you want to talk to today? What's on your mind that you'd like to discuss?",
-      isAI: true,
-      timestamp: new Date(),
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showIntegrations, setShowIntegrations] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+
+  // Load conversation history on mount
+  useEffect(() => {
+    if (user) {
+      loadConversationHistory();
+    }
+  }, [user]);
+
+  const loadConversationHistory = async () => {
+    if (!user) return;
+
+    try {
+      setIsLoadingHistory(true);
+      
+      // Get or create AI conversation for this user
+      const { data: existingConv } = await supabase
+        .from('ai_conversations')
+        .select('id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      let convId = existingConv?.id;
+
+      if (!convId) {
+        // Create new conversation
+        const { data: newConv, error: convError } = await supabase
+          .from('ai_conversations')
+          .insert({ user_id: user.id })
+          .select('id')
+          .single();
+
+        if (convError) throw convError;
+        convId = newConv.id;
+
+        // Add welcome message
+        await supabase
+          .from('ai_messages')
+          .insert({
+            conversation_id: convId,
+            user_id: user.id,
+            content: "Hi! I'm here to help you find the perfect conversation partner. Tell me what's on your mind today, and I'll match you with someone who can truly understand and engage with your thoughts.",
+            is_ai: true
+          });
+      }
+
+      setConversationId(convId);
+
+      // Load message history
+      const { data: messagesData, error: messagesError } = await supabase
+        .from('ai_messages')
+        .select('*')
+        .eq('conversation_id', convId)
+        .order('created_at', { ascending: true });
+
+      if (messagesError) throw messagesError;
+
+      if (messagesData) {
+        const loadedMessages: Message[] = messagesData.map(msg => ({
+          id: msg.id,
+          content: msg.content,
+          isAI: msg.is_ai,
+          timestamp: new Date(msg.created_at)
+        }));
+        setMessages(loadedMessages);
+      }
+    } catch (error) {
+      console.error('Error loading conversation history:', error);
+      // Show welcome message on error
+      setMessages([{
+        id: "1",
+        content: "Hi! I'm here to help you find the perfect conversation partner. Tell me what's on your mind today, and I'll match you with someone who can truly understand and engage with your thoughts.",
+        isAI: true,
+        timestamp: new Date(),
+      }]);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isLoading || !user) return;
+    if (!inputValue.trim() || isLoading || !user || !conversationId) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -48,6 +123,16 @@ export function AIChatInterface() {
     setIsLoading(true);
 
     try {
+      // Save user message to database
+      await supabase
+        .from('ai_messages')
+        .insert({
+          conversation_id: conversationId,
+          user_id: user.id,
+          content: currentInput,
+          is_ai: false
+        });
+
       // Get conversation history for context
       const conversationHistory = messages.map(msg => ({
         role: msg.isAI ? 'assistant' : 'user',
@@ -71,6 +156,23 @@ export function AIChatInterface() {
       };
       
       setMessages(prev => [...prev, aiResponse]);
+
+      // Save AI response to database
+      await supabase
+        .from('ai_messages')
+        .insert({
+          conversation_id: conversationId,
+          user_id: user.id,
+          content: data.response,
+          is_ai: true
+        });
+
+      // Update conversation updated_at timestamp
+      await supabase
+        .from('ai_conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', conversationId);
+
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -116,7 +218,12 @@ export function AIChatInterface() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        {messages.map((message) => (
+        {isLoadingHistory ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          messages.map((message) => (
           <div
             key={message.id}
             className={`flex gap-4 ${message.isAI ? "justify-start" : "justify-end"}`}
@@ -150,7 +257,8 @@ export function AIChatInterface() {
               </Avatar>
             )}
           </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Input */}

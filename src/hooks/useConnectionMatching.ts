@@ -48,7 +48,7 @@ export function useConnectionMatching() {
 
     try {
       // Get all profiles except current user
-      const { data: profiles } = await supabase
+      const { data: realProfiles } = await supabase
         .from('profiles')
         .select('*')
         .neq('user_id', user.id)
@@ -118,10 +118,11 @@ export function useConnectionMatching() {
         }
       ];
 
-      const profilesData = profiles && profiles.length > 0 ? profiles : mockProfiles;
+      // Always merge real profiles with mock profiles to ensure there's always content
+      const allProfiles = [...(realProfiles || []), ...mockProfiles];
 
-      if (profilesData) {
-        const connectionsWithScoring = profilesData.map(profile => {
+      if (allProfiles.length > 0) {
+        const connectionsWithScoring = allProfiles.map(profile => {
           const compatibilityScore = calculateCompatibility(profile, userIntentions);
           const aiReasoning = generateAIReasoning(profile, userIntentions);
           
