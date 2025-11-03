@@ -157,25 +157,25 @@ export function PlatformIntegrations() {
       <AlertDialog open={showMemoryDialog} onOpenChange={setShowMemoryDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Importuj pamięć ChatGPT</AlertDialogTitle>
+            <AlertDialogTitle>Import ChatGPT Memory</AlertDialogTitle>
             <AlertDialogDescription className="space-y-4">
               <div className="space-y-3">
-                <p className="text-sm font-medium">Jak to zrobić:</p>
+                <p className="text-sm font-medium">How to import:</p>
                 <ol className="text-sm space-y-2 list-decimal list-inside">
-                  <li>Otwórz <a href="https://chat.openai.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">chat.openai.com</a> w nowej karcie</li>
-                  <li>Kliknij swój profil → Settings → Personalization → Memory</li>
-                  <li>Skopiuj cały tekst z sekcji "Memory"</li>
-                  <li>Wklej go poniżej</li>
+                  <li>Open <a href="https://chat.openai.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">chat.openai.com</a> in a new tab</li>
+                  <li>Click your profile → Settings → Personalization → Memory</li>
+                  <li>Copy all the text from the "Memory" section</li>
+                  <li>Paste it below</li>
                 </ol>
               </div>
               <p className="text-xs text-muted-foreground">
-                Importując pamięć ChatGPT wyrażasz zgodę na udostępnienie swoich tematów rozmów i preferencji w celu wzbogacenia profilu Synaps i lepszego dopasowania kontaktów.
+                By importing your ChatGPT memory, you consent to share your conversation topics and preferences to enhance your Synaps profile and connection matching.
               </p>
               <div className="space-y-2 pt-2">
-                <Label htmlFor="memoryContent">Pamięć ChatGPT</Label>
+                <Label htmlFor="memoryContent">ChatGPT Memory</Label>
                 <Textarea
                   id="memoryContent"
-                  placeholder="Wklej tutaj treść swojej pamięci ChatGPT..."
+                  placeholder="Paste your ChatGPT memory content here..."
                   value={memoryContent}
                   onChange={(e) => setMemoryContent(e.target.value)}
                   className="min-h-[150px]"
@@ -184,9 +184,9 @@ export function PlatformIntegrations() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Anuluj</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleImportMemory} disabled={isImporting}>
-              {isImporting ? "Importowanie..." : "Importuj pamięć"}
+              {isImporting ? "Importing..." : "Import Memory"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
