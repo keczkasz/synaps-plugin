@@ -30,55 +30,58 @@ serve(async (req) => {
       throw new Error('Invalid user token');
     }
 
-    const { apiKey } = await req.json();
+    const { memoryContent } = await req.json();
 
-    if (!apiKey) {
-      throw new Error('API key is required');
+    if (!memoryContent) {
+      throw new Error('Memory content is required');
     }
 
-    // Fetch conversation memory from OpenAI
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07',
-        messages: [
-          {
-            role: 'system',
-            content: 'Extract and summarize the user\'s interests, preferences, communication style, and topics they frequently discuss. Return this as a structured JSON with keys: interests (array), preferences (array), communication_style (string), frequent_topics (array).'
-          },
-          {
-            role: 'user',
-            content: 'Based on our conversation history, what are my main interests, preferences, and communication patterns?'
+    console.log('Processing ChatGPT memory content...');
+
+    // Parse the memory content to extract interests and topics
+    const lines = memoryContent.split('\n').filter((line: string) => line.trim());
+    
+    const interests: string[] = [];
+    const topics: string[] = [];
+    let communicationStyle = 'thoughtful and engaged';
+    
+    // Extract information from memory lines
+    for (const line of lines) {
+      const cleanLine = line.trim().replace(/^[-•*]\s*/, '');
+      
+      // Look for interest-related keywords
+      if (cleanLine.toLowerCase().includes('interes') || 
+          cleanLine.toLowerCase().includes('hobby') ||
+          cleanLine.toLowerCase().includes('passion') ||
+          cleanLine.toLowerCase().includes('lubisz') ||
+          cleanLine.toLowerCase().includes('love')) {
+        const words = cleanLine.split(/\s+/);
+        words.forEach(word => {
+          const clean = word.replace(/[.,!?;:]/g, '');
+          if (clean.length > 3 && !['with', 'about', 'interest', 'love', 'hobby', 'lubisz'].includes(clean.toLowerCase())) {
+            interests.push(clean);
           }
-        ],
-        max_completion_tokens: 500,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('OpenAI API error:', await response.text());
-      throw new Error('Failed to fetch ChatGPT memory');
+        });
+      }
+      
+      // Add line as potential topic if it's meaningful
+      if (cleanLine.length > 10 && cleanLine.length < 100) {
+        topics.push(cleanLine.substring(0, 50));
+      }
     }
-
-    const data = await response.json();
-    const memoryContent = data.choices[0].message.content;
-
-    let parsedMemory;
-    try {
-      parsedMemory = JSON.parse(memoryContent);
-    } catch {
-      // If not valid JSON, extract insights manually
-      parsedMemory = {
-        interests: [],
-        preferences: [],
-        communication_style: 'conversational',
-        frequent_topics: []
-      };
-    }
+    
+    // Remove duplicates and limit
+    const uniqueInterests = [...new Set(interests)].slice(0, 10);
+    const uniqueTopics = [...new Set(topics)].slice(0, 10);
+    
+    const parsedMemory = {
+      interests: uniqueInterests.length > 0 ? uniqueInterests : ['AI', 'technology', 'conversations'],
+      preferences: [],
+      communication_style: communicationStyle,
+      frequent_topics: uniqueTopics.length > 0 ? uniqueTopics : ['technology', 'personal growth'],
+    };
+    
+    console.log('Extracted data:', parsedMemory);
 
     // Update user profile with imported memory
     const { error: updateError } = await supabase
