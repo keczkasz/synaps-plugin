@@ -72,12 +72,17 @@ const platforms: Platform[] = [
 
 export function PlatformIntegrations() {
   const [showMemoryDialog, setShowMemoryDialog] = useState(false);
+  const [showGeminiDialog, setShowGeminiDialog] = useState(false);
   const [memoryContent, setMemoryContent] = useState("");
+  const [geminiMemoryContent, setGeminiMemoryContent] = useState("");
   const [isImporting, setIsImporting] = useState(false);
+  const [isImportingGemini, setIsImportingGemini] = useState(false);
 
   const handleConnect = (platformId: string) => {
     if (platformId === "chatgpt-memory") {
       setShowMemoryDialog(true);
+    } else if (platformId === "gemini") {
+      setShowGeminiDialog(true);
     } else {
       toast.success(`Connecting to ${platformId}...`);
     }
@@ -105,6 +110,31 @@ export function PlatformIntegrations() {
       toast.error("Failed to import ChatGPT memory. Please try again.");
     } finally {
       setIsImporting(false);
+    }
+  };
+
+  const handleImportGeminiMemory = async () => {
+    if (!geminiMemoryContent.trim()) {
+      toast.error("Please paste your Gemini memory");
+      return;
+    }
+
+    setIsImportingGemini(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('import-chatgpt-memory', {
+        body: { memoryContent: geminiMemoryContent }
+      });
+
+      if (error) throw error;
+
+      toast.success("Gemini memory imported successfully! Your profile has been enriched.");
+      setShowGeminiDialog(false);
+      setGeminiMemoryContent("");
+    } catch (error) {
+      console.error("Error importing Gemini memory:", error);
+      toast.error("Failed to import Gemini memory. Please try again.");
+    } finally {
+      setIsImportingGemini(false);
     }
   };
 
@@ -187,6 +217,44 @@ export function PlatformIntegrations() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleImportMemory} disabled={isImporting}>
               {isImporting ? "Importing..." : "Import Memory"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showGeminiDialog} onOpenChange={setShowGeminiDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Import Google Gemini Memory</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <div className="space-y-3">
+                <p className="text-sm font-medium">How to import:</p>
+                <ol className="text-sm space-y-2 list-decimal list-inside">
+                  <li>Open <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">gemini.google.com</a> in a new tab</li>
+                  <li>Click your profile icon → Settings → Gemini Memory</li>
+                  <li>Copy all the text that Gemini remembers about you</li>
+                  <li>Paste it below</li>
+                </ol>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                By importing your Gemini memory, you consent to share your conversation topics and preferences to enhance your Synaps profile and connection matching.
+              </p>
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="geminiMemoryContent">Gemini Memory</Label>
+                <Textarea
+                  id="geminiMemoryContent"
+                  placeholder="Paste your Gemini memory content here..."
+                  value={geminiMemoryContent}
+                  onChange={(e) => setGeminiMemoryContent(e.target.value)}
+                  className="min-h-[150px]"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleImportGeminiMemory} disabled={isImportingGemini}>
+              {isImportingGemini ? "Importing..." : "Import Memory"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
