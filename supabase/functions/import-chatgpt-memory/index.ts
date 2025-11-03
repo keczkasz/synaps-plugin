@@ -30,55 +30,59 @@ serve(async (req) => {
       throw new Error('Invalid user token');
     }
 
-    const { apiKey } = await req.json();
+    const { memoryContent } = await req.json();
 
-    if (!apiKey) {
-      throw new Error('API key is required');
+    if (!memoryContent || !memoryContent.trim()) {
+      throw new Error('Memory content is required');
     }
 
-    // Fetch conversation memory from OpenAI
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07',
-        messages: [
-          {
-            role: 'system',
-            content: 'Extract and summarize the user\'s interests, preferences, communication style, and topics they frequently discuss. Return this as a structured JSON with keys: interests (array), preferences (array), communication_style (string), frequent_topics (array).'
-          },
-          {
-            role: 'user',
-            content: 'Based on our conversation history, what are my main interests, preferences, and communication patterns?'
+    // Parse the pasted ChatGPT memory content
+    const text = memoryContent.toLowerCase();
+    const interests: string[] = [];
+    const frequent_topics: string[] = [];
+    
+    // Split into sentences and extract interests/topics
+    const sentences = memoryContent.split(/[.!?\n]+/).map((s: string) => s.trim()).filter(Boolean);
+    
+    for (const sentence of sentences) {
+      const lower = sentence.toLowerCase();
+      
+      // Extract interests using common patterns
+      if (lower.includes('interested in') || 
+          lower.includes('likes') || 
+          lower.includes('enjoys') ||
+          lower.includes('passionate about') ||
+          lower.includes('loves')) {
+        
+        // Extract the part after these keywords
+        const parts = sentence.split(/interested in|likes|enjoys|passionate about|loves/i);
+        if (parts.length > 1) {
+          const topic = parts[1].trim().split(/[,;.]/)[0].trim();
+          if (topic && topic.length > 2 && topic.length < 50) {
+            interests.push(topic);
           }
-        ],
-        max_completion_tokens: 500,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('OpenAI API error:', await response.text());
-      throw new Error('Failed to fetch ChatGPT memory');
+        }
+      }
+      
+      // Extract topics/subjects mentioned
+      if (sentence.length > 10 && sentence.length < 100) {
+        const commonWords = ['the', 'is', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'a', 'an'];
+        const words = sentence.split(' ');
+        if (words.length > 2 && words.length < 15) {
+          const hasCommonWord = words.some(w => commonWords.includes(w.toLowerCase()));
+          if (!hasCommonWord && !lower.includes('http')) {
+            frequent_topics.push(sentence);
+          }
+        }
+      }
     }
 
-    const data = await response.json();
-    const memoryContent = data.choices[0].message.content;
-
-    let parsedMemory;
-    try {
-      parsedMemory = JSON.parse(memoryContent);
-    } catch {
-      // If not valid JSON, extract insights manually
-      parsedMemory = {
-        interests: [],
-        preferences: [],
-        communication_style: 'conversational',
-        frequent_topics: []
-      };
-    }
+    // Remove duplicates and limit array sizes
+    const parsedMemory = {
+      interests: [...new Set(interests)].slice(0, 10),
+      communication_style: 'conversational',
+      frequent_topics: [...new Set(frequent_topics)].slice(0, 10)
+    };
 
     // Update user profile with imported memory
     const { error: updateError } = await supabase

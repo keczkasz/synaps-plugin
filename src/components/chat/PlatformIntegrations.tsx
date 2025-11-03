@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 interface Platform {
@@ -72,7 +72,7 @@ const platforms: Platform[] = [
 
 export function PlatformIntegrations() {
   const [showMemoryDialog, setShowMemoryDialog] = useState(false);
-  const [apiKey, setApiKey] = useState("");
+  const [memoryContent, setMemoryContent] = useState("");
   const [isImporting, setIsImporting] = useState(false);
 
   const handleConnect = (platformId: string) => {
@@ -84,25 +84,25 @@ export function PlatformIntegrations() {
   };
 
   const handleImportMemory = async () => {
-    if (!apiKey.trim()) {
-      toast.error("Please enter your OpenAI API key");
+    if (!memoryContent.trim()) {
+      toast.error("Please paste your ChatGPT memory");
       return;
     }
 
     setIsImporting(true);
     try {
       const { data, error } = await supabase.functions.invoke('import-chatgpt-memory', {
-        body: { apiKey }
+        body: { memoryContent }
       });
 
       if (error) throw error;
 
       toast.success("ChatGPT memory imported successfully! Your profile has been enriched.");
       setShowMemoryDialog(false);
-      setApiKey("");
+      setMemoryContent("");
     } catch (error) {
       console.error("Error importing ChatGPT memory:", error);
-      toast.error("Failed to import ChatGPT memory. Please check your API key.");
+      toast.error("Failed to import ChatGPT memory. Please try again.");
     } finally {
       setIsImporting(false);
     }
@@ -157,33 +157,36 @@ export function PlatformIntegrations() {
       <AlertDialog open={showMemoryDialog} onOpenChange={setShowMemoryDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Import ChatGPT Memory</AlertDialogTitle>
+            <AlertDialogTitle>Importuj pamięć ChatGPT</AlertDialogTitle>
             <AlertDialogDescription className="space-y-4">
-              <p>
-                By importing your ChatGPT conversation memory, you consent to share your past conversation topics and preferences to enhance your Synaps profile.
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Jak to zrobić:</p>
+                <ol className="text-sm space-y-2 list-decimal list-inside">
+                  <li>Otwórz <a href="https://chat.openai.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">chat.openai.com</a> w nowej karcie</li>
+                  <li>Kliknij swój profil → Settings → Personalization → Memory</li>
+                  <li>Skopiuj cały tekst z sekcji "Memory"</li>
+                  <li>Wklej go poniżej</li>
+                </ol>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Importując pamięć ChatGPT wyrażasz zgodę na udostępnienie swoich tematów rozmów i preferencji w celu wzbogacenia profilu Synaps i lepszego dopasowania kontaktów.
               </p>
-              <p className="text-sm">
-                This will help us connect you with more compatible people based on your interests and communication style.
-              </p>
-              <div className="space-y-2 pt-4">
-                <Label htmlFor="apiKey">OpenAI API Key</Label>
-                <Input
-                  id="apiKey"
-                  type="password"
-                  placeholder="sk-..."
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="memoryContent">Pamięć ChatGPT</Label>
+                <Textarea
+                  id="memoryContent"
+                  placeholder="Wklej tutaj treść swojej pamięci ChatGPT..."
+                  value={memoryContent}
+                  onChange={(e) => setMemoryContent(e.target.value)}
+                  className="min-h-[150px]"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Your API key is only used once to import memory and is never stored.
-                </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Anuluj</AlertDialogCancel>
             <AlertDialogAction onClick={handleImportMemory} disabled={isImporting}>
-              {isImporting ? "Importing..." : "Import Memory"}
+              {isImporting ? "Importowanie..." : "Importuj pamięć"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -75,7 +75,7 @@ const Auth = () => {
             </div>
             <h1 className="text-2xl font-bold text-foreground">Synaps</h1>
           </div>
-          <p className="text-muted-foreground">the best plugin to language models</p>
+          <p className="text-muted-foreground">Łącz się z ludźmi poprzez AI i wspólne zainteresowania</p>
         </div>
 
         <Tabs defaultValue="signin" className="w-full">
