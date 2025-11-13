@@ -1,5 +1,6 @@
-# ChatGPT GPT Integration - OAuth and API endpoints
 project_id = "vkcxoxoxrpllcbyhdyam"
+
+# Edge Functions Configuration
 
 [functions.ai-chat]
 verify_jwt = true

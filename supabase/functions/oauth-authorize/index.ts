@@ -65,7 +65,8 @@ serve(async (req) => {
 
     // For GET requests, return HTML consent page
     if (req.method === 'GET') {
-      const consentPageUrl = `${Deno.env.get('SUPABASE_URL').replace('.supabase.co', '')}/oauth-consent?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state || ''}&scope=${encodeURIComponent(scope)}`;
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+      const consentPageUrl = `${supabaseUrl.replace('.supabase.co', '')}/oauth-consent?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state || ''}&scope=${encodeURIComponent(scope)}`;
       
       return new Response(null, {
         status: 302,

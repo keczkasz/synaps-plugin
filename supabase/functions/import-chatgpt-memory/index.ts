@@ -69,7 +69,7 @@ serve(async (req) => {
         const commonWords = ['the', 'is', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'a', 'an'];
         const words = sentence.split(' ');
         if (words.length > 2 && words.length < 15) {
-          const hasCommonWord = words.some(w => commonWords.includes(w.toLowerCase()));
+          const hasCommonWord = words.some((w: string) => commonWords.includes(w.toLowerCase()));
           if (!hasCommonWord && !lower.includes('http')) {
             frequent_topics.push(sentence);
           }
@@ -125,7 +125,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in import-chatgpt-memory:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

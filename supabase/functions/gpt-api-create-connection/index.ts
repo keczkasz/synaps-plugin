@@ -104,7 +104,8 @@ serve(async (req) => {
         });
     }
 
-    const conversationUrl = `${Deno.env.get('SUPABASE_URL').replace('.supabase.co', '')}/chat?conversation=${conversationId}`;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const conversationUrl = `${supabaseUrl.replace('.supabase.co', '')}/chat?conversation=${conversationId}`;
 
     const response = {
       success: true,
