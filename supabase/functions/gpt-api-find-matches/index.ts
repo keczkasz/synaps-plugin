@@ -139,9 +139,63 @@ serve(async (req) => {
       .sort((a, b) => b.compatibilityScore - a.compatibilityScore)
       .slice(0, limit);
 
+    const appUrl = 'https://vkcxoxoxrpllcbyhdyam.netlify.app';
+
+    // Handle no matches - provide fallback users
+    if (sortedMatches.length === 0 && allProfiles.length > 0) {
+      const fallbackUsers = allProfiles
+        .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+        .slice(0, 3)
+        .map(profile => ({
+          userId: profile.id,
+          displayName: profile.display_name,
+          interests: profile.interests || [],
+          currentMood: profile.current_mood,
+          bio: profile.bio,
+          compatibilityScore: 0,
+          matchReasons: ['Active user in the Synapse community'],
+          lastActive: profile.updated_at
+        }));
+
+      const response = {
+        matches: fallbackUsers,
+        totalFound: fallbackUsers.length,
+        message: `No perfect matches found${topic ? ` for "${topic}"` : ''}, but here are some active users. You can also browse more in the Synapse app!`,
+        fallbackMode: true,
+        appUrl,
+        searchCriteria: { topic, mood, conversationType }
+      };
+
+      await logApiCall(userId, '/gpt-api-find-matches', req.method, 200, requestBody, { matchCount: fallbackUsers.length, fallbackMode: true });
+
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Handle no users at all
+    if (sortedMatches.length === 0) {
+      const response = {
+        matches: [],
+        totalFound: 0,
+        message: 'Synapse is just starting! Be one of the first users. Create your profile and start chatting.',
+        appUrl,
+        searchCriteria: { topic, mood, conversationType }
+      };
+
+      await logApiCall(userId, '/gpt-api-find-matches', req.method, 200, requestBody, { matchCount: 0, noUsers: true });
+
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Normal response with good matches
     const response = {
       matches: sortedMatches,
       totalFound: sortedMatches.length,
+      message: `Found ${sortedMatches.length} compatible user${sortedMatches.length > 1 ? 's' : ''}!`,
+      appUrl,
       searchCriteria: {
         topic,
         mood,

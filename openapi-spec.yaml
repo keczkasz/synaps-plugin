@@ -266,6 +266,15 @@ components:
         totalFound:
           type: integer
           description: Total number of matches found
+        message:
+          type: string
+          description: User-friendly message about the search results
+        fallbackMode:
+          type: boolean
+          description: True if showing fallback results (active users) when no perfect matches were found
+        appUrl:
+          type: string
+          description: URL to the Synapse web application where users can browse more connections
         searchCriteria:
           type: object
           properties:
