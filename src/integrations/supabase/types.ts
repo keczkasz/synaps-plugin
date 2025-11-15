@@ -14,156 +14,258 @@ export type Database = {
   }
   public: {
     Tables: {
-      gpt_api_logs: {
+      ai_conversations: {
         Row: {
           created_at: string
-          endpoint: string
-          error_message: string | null
           id: string
-          method: string
-          request_body: Json | null
-          response_body: Json | null
-          status_code: number
+          updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          endpoint: string
-          error_message?: string | null
           id?: string
-          method: string
-          request_body?: Json | null
-          response_body?: Json | null
-          status_code: number
+          updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
-          endpoint?: string
-          error_message?: string | null
           id?: string
-          method?: string
-          request_body?: Json | null
-          response_body?: Json | null
-          status_code?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
       }
-      gpt_oauth_clients: {
+      ai_insights: {
         Row: {
-          client_id: string
-          client_name: string
-          client_secret: string
+          content: string
           created_at: string
           id: string
-          redirect_uris: string[]
+          insight_type: string
+          metadata: Json | null
+          user_id: string
         }
         Insert: {
-          client_id: string
-          client_name: string
-          client_secret: string
+          content: string
           created_at?: string
           id?: string
-          redirect_uris: string[]
+          insight_type: string
+          metadata?: Json | null
+          user_id: string
         }
         Update: {
-          client_id?: string
-          client_name?: string
-          client_secret?: string
+          content?: string
           created_at?: string
           id?: string
-          redirect_uris?: string[]
+          insight_type?: string
+          metadata?: Json | null
+          user_id?: string
         }
         Relationships: []
       }
-      gpt_oauth_codes: {
+      ai_messages: {
         Row: {
-          client_id: string
-          code: string
+          content: string
+          conversation_id: string
           created_at: string
-          expires_at: string
           id: string
-          redirect_uri: string
-          scope: string
-          used: boolean
+          is_ai: boolean
           user_id: string
         }
         Insert: {
-          client_id: string
-          code: string
+          content: string
+          conversation_id: string
           created_at?: string
-          expires_at: string
           id?: string
-          redirect_uri: string
-          scope: string
-          used?: boolean
+          is_ai?: boolean
           user_id: string
         }
         Update: {
-          client_id?: string
-          code?: string
+          content?: string
+          conversation_id?: string
           created_at?: string
-          expires_at?: string
           id?: string
-          redirect_uri?: string
-          scope?: string
-          used?: boolean
+          is_ai?: boolean
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "gpt_oauth_codes_client_id_fkey"
-            columns: ["client_id"]
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
             isOneToOne: false
-            referencedRelation: "gpt_oauth_clients"
-            referencedColumns: ["client_id"]
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
           },
         ]
       }
-      gpt_oauth_tokens: {
+      connections: {
         Row: {
-          access_token: string
-          client_id: string
+          ai_reasoning: string | null
+          compatibility_score: number | null
+          connected_user_id: string
           created_at: string
-          expires_at: string
           id: string
-          refresh_token: string
-          revoked: boolean
-          scope: string
+          status: string | null
+          updated_at: string
           user_id: string
         }
         Insert: {
-          access_token: string
-          client_id: string
+          ai_reasoning?: string | null
+          compatibility_score?: number | null
+          connected_user_id: string
           created_at?: string
-          expires_at: string
           id?: string
-          refresh_token: string
-          revoked?: boolean
-          scope: string
+          status?: string | null
+          updated_at?: string
           user_id: string
         }
         Update: {
-          access_token?: string
-          client_id?: string
+          ai_reasoning?: string | null
+          compatibility_score?: number | null
+          connected_user_id?: string
           created_at?: string
-          expires_at?: string
           id?: string
-          refresh_token?: string
-          revoked?: boolean
-          scope?: string
+          status?: string | null
+          updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string | null
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "gpt_oauth_tokens_client_id_fkey"
-            columns: ["client_id"]
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
             isOneToOne: false
-            referencedRelation: "gpt_oauth_clients"
-            referencedColumns: ["client_id"]
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          connection_goals: string | null
+          created_at: string
+          current_intentions: string | null
+          display_name: string | null
+          id: string
+          interests: string[] | null
+          last_conversation_topics: string[] | null
+          mood: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          connection_goals?: string | null
+          created_at?: string
+          current_intentions?: string | null
+          display_name?: string | null
+          id?: string
+          interests?: string[] | null
+          last_conversation_topics?: string[] | null
+          mood?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          connection_goals?: string | null
+          created_at?: string
+          current_intentions?: string | null
+          display_name?: string | null
+          id?: string
+          interests?: string[] | null
+          last_conversation_topics?: string[] | null
+          mood?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          created_at: string
+          daily_goals: string | null
+          desired_conversation_type: string | null
+          energy_level: number | null
+          id: string
+          session_date: string
+          topics_of_interest: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_goals?: string | null
+          desired_conversation_type?: string | null
+          energy_level?: number | null
+          id?: string
+          session_date?: string
+          topics_of_interest?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_goals?: string | null
+          desired_conversation_type?: string | null
+          energy_level?: number | null
+          id?: string
+          session_date?: string
+          topics_of_interest?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
