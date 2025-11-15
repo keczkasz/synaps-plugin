@@ -14,7 +14,157 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      gpt_api_logs: {
+        Row: {
+          created_at: string
+          endpoint: string
+          error_message: string | null
+          id: string
+          method: string
+          request_body: Json | null
+          response_body: Json | null
+          status_code: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          error_message?: string | null
+          id?: string
+          method: string
+          request_body?: Json | null
+          response_body?: Json | null
+          status_code: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          error_message?: string | null
+          id?: string
+          method?: string
+          request_body?: Json | null
+          response_body?: Json | null
+          status_code?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gpt_oauth_clients: {
+        Row: {
+          client_id: string
+          client_name: string
+          client_secret: string
+          created_at: string
+          id: string
+          redirect_uris: string[]
+        }
+        Insert: {
+          client_id: string
+          client_name: string
+          client_secret: string
+          created_at?: string
+          id?: string
+          redirect_uris: string[]
+        }
+        Update: {
+          client_id?: string
+          client_name?: string
+          client_secret?: string
+          created_at?: string
+          id?: string
+          redirect_uris?: string[]
+        }
+        Relationships: []
+      }
+      gpt_oauth_codes: {
+        Row: {
+          client_id: string
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          redirect_uri: string
+          scope: string
+          used: boolean
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          code: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          redirect_uri: string
+          scope: string
+          used?: boolean
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          redirect_uri?: string
+          scope?: string
+          used?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gpt_oauth_codes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "gpt_oauth_clients"
+            referencedColumns: ["client_id"]
+          },
+        ]
+      }
+      gpt_oauth_tokens: {
+        Row: {
+          access_token: string
+          client_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          refresh_token: string
+          revoked: boolean
+          scope: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          client_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          refresh_token: string
+          revoked?: boolean
+          scope: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          client_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          refresh_token?: string
+          revoked?: boolean
+          scope?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gpt_oauth_tokens_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "gpt_oauth_clients"
+            referencedColumns: ["client_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
