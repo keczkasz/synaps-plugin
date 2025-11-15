@@ -10,22 +10,18 @@ import { useToast } from "@/components/ui/use-toast";
 import { Tables } from "@/integrations/supabase/types";
 
 type Profile = Tables<'profiles'>;
-type AIInsight = Tables<'ai_insights'>;
 
 export function ProfileOverview() {
   const { user } = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [insights, setInsights] = useState<AIInsight[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
-      fetchInsights();
-      subscribeToInsights();
     }
   }, [user]);
 
@@ -46,45 +42,6 @@ export function ProfileOverview() {
     }
   };
 
-  const fetchInsights = async () => {
-    if (!user) return;
-    
-    const { data } = await supabase
-      .from('ai_insights')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(3);
-      
-    if (data) {
-      setInsights(data);
-    }
-  };
-
-  const subscribeToInsights = () => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('ai-insights-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'ai_insights',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          fetchInsights();
-          fetchProfile(); // Refresh profile for updated mood/interests
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -146,33 +103,8 @@ export function ProfileOverview() {
     }
   };
 
-  const getLatestInsight = (type: 'emotional_patterns' | 'communication_style' | 'connection_goals') => {
-    const latestInsight = insights[0];
-    if (!latestInsight?.metadata || typeof latestInsight.metadata !== 'object') {
-      return getDefaultInsight(type);
-    }
-    
-    const metadata = latestInsight.metadata as any;
-    return metadata[type] || getDefaultInsight(type);
-  };
-
-  const getDefaultInsight = (type: string) => {
-    const defaults = {
-      emotional_patterns: "Continue conversations with your AI companion to discover your emotional patterns and preferences.",
-      communication_style: "Your unique communication style will be revealed through ongoing AI conversations.", 
-      connection_goals: "Chat with your AI companion to help identify your ideal connection goals and relationship preferences."
-    };
-    return defaults[type as keyof typeof defaults];
-  };
-
   const getPersonalityTraits = () => {
-    const latestInsight = insights[0];
-    if (!latestInsight?.metadata || typeof latestInsight.metadata !== 'object') {
-      return ["Deep Thinker", "Authentic", "Growth-Minded"];
-    }
-    
-    const metadata = latestInsight.metadata as any;
-    return metadata.personality_traits || ["Deep Thinker", "Authentic", "Growth-Minded"];
+    return profile?.interests?.slice(0, 3) || ["Deep Thinker", "Authentic", "Growth-Minded"];
   };
 
   return (
@@ -225,48 +157,6 @@ export function ProfileOverview() {
                 </Badge>
               ))}
             </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* AI Insights */}
-      <Card className="p-6 shadow-card border-0 bg-card/80 backdrop-blur-sm">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-2xl bg-primary-soft flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-primary" />
-          </div>
-          <h2 className="text-xl font-semibold text-foreground">AI Insights About You</h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Heart className="w-5 h-5 text-primary" />
-              <h3 className="font-medium text-foreground">Emotional Patterns</h3>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {getLatestInsight('emotional_patterns')}
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Brain className="w-5 h-5 text-primary" />
-              <h3 className="font-medium text-foreground">Communication Style</h3>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {getLatestInsight('communication_style')}
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-primary" />
-              <h3 className="font-medium text-foreground">Connection Goals</h3>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {getLatestInsight('connection_goals')}
-            </p>
           </div>
         </div>
       </Card>
