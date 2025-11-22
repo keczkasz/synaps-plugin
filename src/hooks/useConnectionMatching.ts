@@ -208,13 +208,13 @@ export function useConnectionMatching() {
 
     // Specific reasoning based on common interests
     if (commonInterests.length > 0) {
-      const interestText = commonInterests.join(' i ');
-      return `Widzę, że oboje jesteście zainteresowani ${interestText}! To doskonała podstawa do rozmowy. ${profile.display_name} może podzielić się swoimi doświadczeniami w tej dziedzinie.`;
+      const interestText = commonInterests.join(' and ');
+      return `I see you're both interested in ${interestText}! This is a perfect foundation for conversation. ${profile.display_name} can share their experiences in this field.`;
     }
 
     // Fallback with mood and general interests
-    const firstInterest = profile.interests?.[0] || 'rozmowy';
-    return `${profile.display_name} to osoba z ${profile.mood.toLowerCase()} nastawieniem, która uwielbia ${firstInterest}. Możecie razem eksplorować te tematy i odkrywać nowe perspektywy!`;
+    const firstInterest = profile.interests?.[0] || 'conversations';
+    return `${profile.display_name} is someone with a ${profile.mood.toLowerCase()} mindset who loves ${firstInterest}. You can explore these topics together and discover new perspectives!`;
   };
 
   const getLastActiveText = (updatedAt: string): string => {
