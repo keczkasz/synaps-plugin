@@ -156,14 +156,8 @@ const Chat = () => {
       
       setCurrentUserProfile(myProfile);
 
-      // Fetch connection data between users
-      const { data: connectionInfo } = await supabase
-        .from('connections')
-        .select('*')
-        .or(`and(user_id.eq.${user.id},connected_user_id.eq.${otherUserId}),and(user_id.eq.${otherUserId},connected_user_id.eq.${user.id})`)
-        .single();
-
-      setConnectionData(connectionInfo);
+      // Connection data will be added when connections table is created
+      setConnectionData(null);
     } catch (error) {
       console.error('Error fetching conversation:', error);
     } finally {
