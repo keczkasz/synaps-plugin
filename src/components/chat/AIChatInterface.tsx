@@ -196,7 +196,7 @@ export function AIChatInterface() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-foreground">Synaps Connection Assistant</h2>
-              <p className="text-sm text-muted-foreground">Connect to Custom GPTs</p>
+              <p className="text-sm text-muted-foreground">Connect Your Language Model</p>
             </div>
           </div>
           <Button
