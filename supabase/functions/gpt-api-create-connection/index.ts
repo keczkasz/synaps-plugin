@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { verifyOAuthToken, logApiCall } from '../_shared/oauth-middleware.ts';
+import { validateUUID, validateString, sanitizeString, ValidationError } from '../_shared/validation.ts';
 // ChatGPT GPT API - Create Connection
 
 const corsHeaders = {
@@ -30,9 +31,31 @@ serve(async (req) => {
     const requestBody = await req.json();
     const { targetUserId, introMessage } = requestBody;
 
-    if (!targetUserId) {
-      await logApiCall(userId, '/gpt-api-create-connection', req.method, 400, requestBody, null, 'targetUserId is required');
-      return new Response(JSON.stringify({ error: 'targetUserId is required' }), {
+    // Validate inputs
+    const errors: ValidationError[] = [];
+
+    const targetUserIdError = validateUUID(targetUserId, 'targetUserId', { required: true });
+    if (targetUserIdError) errors.push(targetUserIdError);
+
+    const introMessageError = validateString(introMessage, 'introMessage', { maxLength: 1000 });
+    if (introMessageError) errors.push(introMessageError);
+
+    if (errors.length > 0) {
+      await logApiCall(userId, '/gpt-api-create-connection', req.method, 400, null, null, 
+        `Validation errors: ${errors.map(e => e.message).join(', ')}`);
+      return new Response(JSON.stringify({ 
+        error: 'Validation failed', 
+        details: errors 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Prevent self-connection
+    if (targetUserId === userId) {
+      await logApiCall(userId, '/gpt-api-create-connection', req.method, 400, null, null, 'Cannot connect to yourself');
+      return new Response(JSON.stringify({ error: 'Cannot connect to yourself' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -93,14 +116,15 @@ serve(async (req) => {
       conversationId = newConversation.id;
 
       // Create intro message from GPT
-      const defaultMessage = introMessage || 
+      const sanitizedIntroMessage = introMessage ? sanitizeString(introMessage) : null;
+      const defaultMessage = sanitizedIntroMessage || 
         `🤖 Hi! Your ChatGPT assistant connected you with ${targetProfile.display_name} based on your conversation interests. Hope you have a great chat!`;
 
       await supabase
         .from('messages')
         .insert({
           conversation_id: conversationId,
-          sender_id: 'gpt-assistant',
+          sender_id: userId,
           content: defaultMessage
         });
     }

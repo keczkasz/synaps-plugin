@@ -31,6 +31,38 @@ export async function verifyOAuthToken(authHeader: string | null) {
   return { error: null, status: 200, userId: tokenData.user_id };
 }
 
+function sanitizeLogData(data: any): any {
+  if (!data) return null;
+  
+  // Create a sanitized copy
+  const sanitized = JSON.parse(JSON.stringify(data));
+  
+  // Remove sensitive fields
+  const sensitiveFields = [
+    'password', 'token', 'secret', 'apiKey', 'api_key',
+    'authorization', 'accessToken', 'refreshToken',
+    'bio', 'email', 'phone', 'address'
+  ];
+  
+  function redactSensitive(obj: any): void {
+    if (typeof obj !== 'object' || obj === null) return;
+    
+    for (const key in obj) {
+      if (sensitiveFields.some(field => key.toLowerCase().includes(field.toLowerCase()))) {
+        obj[key] = '[REDACTED]';
+      } else if (typeof obj[key] === 'object') {
+        redactSensitive(obj[key]);
+      } else if (typeof obj[key] === 'string' && obj[key].length > 500) {
+        // Truncate very long strings
+        obj[key] = obj[key].substring(0, 500) + '... [TRUNCATED]';
+      }
+    }
+  }
+  
+  redactSensitive(sanitized);
+  return sanitized;
+}
+
 export async function logApiCall(
   userId: string,
   endpoint: string,
@@ -45,13 +77,17 @@ export async function logApiCall(
     Deno.env.get('SUPABASE_ANON_KEY') ?? ''
   );
 
+  // Sanitize sensitive data before logging
+  const sanitizedRequest = sanitizeLogData(requestBody);
+  const sanitizedResponse = sanitizeLogData(responseBody);
+
   await supabase.from('gpt_api_logs').insert({
     user_id: userId,
     endpoint,
     method,
     status_code: statusCode,
-    request_body: requestBody,
-    response_body: responseBody,
+    request_body: sanitizedRequest,
+    response_body: sanitizedResponse,
     error_message: errorMessage
   });
 }

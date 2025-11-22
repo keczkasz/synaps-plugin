@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { verifyOAuthToken, logApiCall } from '../_shared/oauth-middleware.ts';
+import { validateString, validateNumber, sanitizeString, ValidationError } from '../_shared/validation.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,6 +29,38 @@ serve(async (req) => {
     const userId = authResult.userId!;
     const requestBody = await req.json();
     const { topic, mood, conversationType, limit = 5 } = requestBody;
+
+    // Validate inputs
+    const errors: ValidationError[] = [];
+
+    const topicError = validateString(topic, 'topic', { maxLength: 200 });
+    if (topicError) errors.push(topicError);
+
+    const moodError = validateString(mood, 'mood', { maxLength: 100 });
+    if (moodError) errors.push(moodError);
+
+    const typeError = validateString(conversationType, 'conversationType', { maxLength: 100 });
+    if (typeError) errors.push(typeError);
+
+    const limitError = validateNumber(limit, 'limit', { min: 1, max: 20, integer: true });
+    if (limitError) errors.push(limitError);
+
+    if (errors.length > 0) {
+      await logApiCall(userId, '/gpt-api-find-matches', req.method, 400, null, null, 
+        `Validation errors: ${errors.map(e => e.message).join(', ')}`);
+      return new Response(JSON.stringify({ 
+        error: 'Validation failed', 
+        details: errors 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Sanitize string inputs
+    const sanitizedTopic = topic ? sanitizeString(topic) : undefined;
+    const sanitizedMood = mood ? sanitizeString(mood) : undefined;
+    const sanitizedType = conversationType ? sanitizeString(conversationType) : undefined;
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -82,30 +115,30 @@ serve(async (req) => {
       }
 
       // Check if topic matches interests or conversation topics
-      if (topic) {
-        const topicLower = topic.toLowerCase();
+      if (sanitizedTopic) {
+        const topicLower = sanitizedTopic.toLowerCase();
         const matchesInterests = profileInterests.some((interest: string) => 
           interest.toLowerCase().includes(topicLower) || topicLower.includes(interest.toLowerCase())
         );
-        const matchesTopics = (profile.conversation_topics || []).some((t: string) => 
+        const matchesTopics = (profile.last_conversation_topics || []).some((t: string) => 
           t.toLowerCase().includes(topicLower) || topicLower.includes(t.toLowerCase())
         );
 
         if (matchesInterests) {
           score += 25;
-          reasons.push(`Interested in ${topic}`);
+          reasons.push(`Interested in ${sanitizedTopic}`);
         }
         if (matchesTopics) {
           score += 20;
-          reasons.push(`Enjoys discussing ${topic}`);
+          reasons.push(`Enjoys discussing ${sanitizedTopic}`);
         }
       }
 
       // Check mood compatibility
-      if (mood && profile.current_mood) {
-        if (mood.toLowerCase() === profile.current_mood.toLowerCase()) {
+      if (sanitizedMood && profile.mood) {
+        if (sanitizedMood.toLowerCase() === profile.mood.toLowerCase()) {
           score += 10;
-          reasons.push(`Similar mood: ${mood}`);
+          reasons.push(`Similar mood: ${sanitizedMood}`);
         }
       }
 
@@ -125,7 +158,7 @@ serve(async (req) => {
         userId: profile.id,
         displayName: profile.display_name,
         interests: profile.interests || [],
-        currentMood: profile.current_mood,
+        currentMood: profile.mood,
         bio: profile.bio,
         compatibilityScore: Math.min(score, 100),
         matchReasons: reasons,
@@ -150,20 +183,20 @@ serve(async (req) => {
           userId: profile.id,
           displayName: profile.display_name,
           interests: profile.interests || [],
-          currentMood: profile.current_mood,
+          currentMood: profile.mood,
           bio: profile.bio,
           compatibilityScore: 0,
-          matchReasons: ['Active user in the Synapse community'],
+          matchReasons: ['Active user in the Synaps community'],
           lastActive: profile.updated_at
         }));
 
       const response = {
         matches: fallbackUsers,
         totalFound: fallbackUsers.length,
-        message: `No perfect matches found${topic ? ` for "${topic}"` : ''}, but here are some active users. You can also browse more in the Synapse app!`,
+        message: `No perfect matches found${sanitizedTopic ? ` for "${sanitizedTopic}"` : ''}, but here are some active users. You can also browse more in the Synaps app!`,
         fallbackMode: true,
         appUrl,
-        searchCriteria: { topic, mood, conversationType }
+        searchCriteria: { topic: sanitizedTopic, mood: sanitizedMood, conversationType: sanitizedType }
       };
 
       await logApiCall(userId, '/gpt-api-find-matches', req.method, 200, requestBody, { matchCount: fallbackUsers.length, fallbackMode: true });
@@ -178,9 +211,9 @@ serve(async (req) => {
       const response = {
         matches: [],
         totalFound: 0,
-        message: 'Synapse is just starting! Be one of the first users. Create your profile and start chatting.',
+        message: 'Synaps is just starting! Be one of the first users. Create your profile and start chatting.',
         appUrl,
-        searchCriteria: { topic, mood, conversationType }
+        searchCriteria: { topic: sanitizedTopic, mood: sanitizedMood, conversationType: sanitizedType }
       };
 
       await logApiCall(userId, '/gpt-api-find-matches', req.method, 200, requestBody, { matchCount: 0, noUsers: true });
@@ -197,9 +230,9 @@ serve(async (req) => {
       message: `Found ${sortedMatches.length} compatible user${sortedMatches.length > 1 ? 's' : ''}!`,
       appUrl,
       searchCriteria: {
-        topic,
-        mood,
-        conversationType
+        topic: sanitizedTopic,
+        mood: sanitizedMood,
+        conversationType: sanitizedType
       }
     };
 
