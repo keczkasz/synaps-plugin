@@ -21,8 +21,13 @@ serve(async (req) => {
     
     if (authResult.error) {
       await logApiCall('unknown', '/gpt-api-get-profile', req.method, authResult.status, null, null, authResult.error);
-      return new Response(JSON.stringify({ error: authResult.error }), {
-        status: authResult.status,
+      
+      // Return simple 401 to trigger ChatGPT OAuth flow
+      return new Response(JSON.stringify({ 
+        error: 'unauthorized',
+        error_description: 'Authentication required'
+      }), {
+        status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

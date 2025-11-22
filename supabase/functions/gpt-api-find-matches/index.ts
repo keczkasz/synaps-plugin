@@ -25,19 +25,10 @@ serve(async (req) => {
     if (authResult.error) {
       await logApiCall('unknown', '/gpt-api-find-matches', req.method, authResult.status, requestBody, null, authResult.error);
       
-      // Build app URL with search parameters
-      const appUrl = new URL('https://vkcxoxoxrpllcbyhdyam.netlify.app/');
-      if (topic) appUrl.searchParams.set('topic', topic);
-      if (mood) appUrl.searchParams.set('mood', mood);
-      if (conversationType) appUrl.searchParams.set('type', conversationType);
-      appUrl.searchParams.set('view', 'connections');
-      
+      // Return simple 401 to trigger ChatGPT OAuth flow
       return new Response(JSON.stringify({ 
-        error: 'Please sign in to Synaps to see your matches',
-        loginRequired: true,
-        appUrl: appUrl.toString(),
-        message: `Sign in to Synaps to find people interested in ${topic || 'connecting'}!`,
-        searchCriteria: { topic, mood, conversationType }
+        error: 'unauthorized',
+        error_description: 'Authentication required'
       }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
