@@ -168,7 +168,7 @@ export function ConnectionSuggestions() {
                           ) : (
                             <MessageCircle className="w-4 h-4 mr-2" />
                           )}
-                          {creatingConversation === connection.id ? 'Tworzenie...' : 'Start Conversation'}
+                          {creatingConversation === connection.id ? 'Creating...' : 'Start Conversation'}
                         </Button>
                         <Button variant="outline" size="sm" className="rounded-xl">
                           <Heart className="w-4 h-4" />
