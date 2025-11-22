@@ -9,6 +9,7 @@ import {
   sanitizeArray,
   ValidationError
 } from '../_shared/validation.ts';
+import { auditProfileUpdate, auditValidationFailed } from '../_shared/audit.ts';
 // ChatGPT GPT API - Update User Profile
 
 const corsHeaders = {
@@ -23,7 +24,7 @@ serve(async (req) => {
 
   try {
     // Verify OAuth token
-    const authResult = await verifyOAuthToken(req.headers.get('Authorization'));
+    const authResult = await verifyOAuthToken(req.headers.get('Authorization'), req, '/gpt-api-update-profile');
     
     if (authResult.error) {
       await logApiCall('unknown', '/gpt-api-update-profile', req.method, authResult.status, null, null, authResult.error);
@@ -63,6 +64,7 @@ serve(async (req) => {
     if (topicsError) errors.push(topicsError);
 
     if (errors.length > 0) {
+      await auditValidationFailed(userId, '/gpt-api-update-profile', errors.map(e => e.message), req);
       await logApiCall(userId, '/gpt-api-update-profile', req.method, 400, null, null, 
         `Validation errors: ${errors.map(e => e.message).join(', ')}`);
       return new Response(JSON.stringify({ 
@@ -116,11 +118,15 @@ serve(async (req) => {
         userId: profile.id,
         displayName: profile.display_name,
         interests: profile.interests || [],
-        currentMood: profile.current_mood,
+        currentMood: profile.mood,
         currentIntentions: profile.current_intentions,
-        conversationTopics: profile.conversation_topics || []
+        conversationTopics: profile.last_conversation_topics || []
       }
     };
+
+    // Audit successful profile update
+    const changedFields = Object.keys(updateData);
+    await auditProfileUpdate(userId, profile.id, changedFields, req);
 
     await logApiCall(userId, '/gpt-api-update-profile', req.method, 200, requestBody, response);
 
