@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { verifyOAuthToken, logApiCall } from '../_shared/oauth-middleware.ts';
 import { validateString, validateNumber, sanitizeString, ValidationError } from '../_shared/validation.ts';
+import { auditValidationFailed } from '../_shared/audit.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,7 +17,7 @@ serve(async (req) => {
 
   try {
     // Verify OAuth token
-    const authResult = await verifyOAuthToken(req.headers.get('Authorization'));
+    const authResult = await verifyOAuthToken(req.headers.get('Authorization'), req, '/gpt-api-find-matches');
     
     if (authResult.error) {
       await logApiCall('unknown', '/gpt-api-find-matches', req.method, authResult.status, null, null, authResult.error);
@@ -46,6 +47,7 @@ serve(async (req) => {
     if (limitError) errors.push(limitError);
 
     if (errors.length > 0) {
+      await auditValidationFailed(userId, '/gpt-api-find-matches', errors.map(e => e.message), req);
       await logApiCall(userId, '/gpt-api-find-matches', req.method, 400, null, null, 
         `Validation errors: ${errors.map(e => e.message).join(', ')}`);
       return new Response(JSON.stringify({ 

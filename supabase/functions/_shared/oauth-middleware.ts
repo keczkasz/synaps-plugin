@@ -1,7 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { auditAuthFailed } from './audit.ts';
 
-export async function verifyOAuthToken(authHeader: string | null) {
+export async function verifyOAuthToken(authHeader: string | null, request?: Request, endpoint?: string) {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (request && endpoint) {
+      await auditAuthFailed('unknown', 'Missing or invalid authorization header', endpoint, request);
+    }
     return { error: 'unauthorized', status: 401, userId: null };
   }
 
@@ -20,11 +24,17 @@ export async function verifyOAuthToken(authHeader: string | null) {
     .single();
 
   if (error || !tokenData) {
+    if (request && endpoint) {
+      await auditAuthFailed('unknown', 'Invalid or revoked token', endpoint, request);
+    }
     return { error: 'invalid_token', status: 401, userId: null };
   }
 
   // Check if token is expired
   if (new Date(tokenData.expires_at) < new Date()) {
+    if (request && endpoint) {
+      await auditAuthFailed(tokenData.user_id, 'Token expired', endpoint, request);
+    }
     return { error: 'token_expired', status: 401, userId: null };
   }
 

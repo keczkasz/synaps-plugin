@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { verifyOAuthToken, logApiCall } from '../_shared/oauth-middleware.ts';
 import { validateUUID, validateString, sanitizeString, ValidationError } from '../_shared/validation.ts';
+import { auditConnectionCreated, auditValidationFailed, auditAccessDenied } from '../_shared/audit.ts';
 // ChatGPT GPT API - Create Connection
 
 const corsHeaders = {
@@ -17,7 +18,7 @@ serve(async (req) => {
 
   try {
     // Verify OAuth token
-    const authResult = await verifyOAuthToken(req.headers.get('Authorization'));
+    const authResult = await verifyOAuthToken(req.headers.get('Authorization'), req, '/gpt-api-create-connection');
     
     if (authResult.error) {
       await logApiCall('unknown', '/gpt-api-create-connection', req.method, authResult.status, null, null, authResult.error);
@@ -41,6 +42,7 @@ serve(async (req) => {
     if (introMessageError) errors.push(introMessageError);
 
     if (errors.length > 0) {
+      await auditValidationFailed(userId, '/gpt-api-create-connection', errors.map(e => e.message), req);
       await logApiCall(userId, '/gpt-api-create-connection', req.method, 400, null, null, 
         `Validation errors: ${errors.map(e => e.message).join(', ')}`);
       return new Response(JSON.stringify({ 
@@ -54,6 +56,7 @@ serve(async (req) => {
 
     // Prevent self-connection
     if (targetUserId === userId) {
+      await auditAccessDenied(userId, '/gpt-api-create-connection', 'Attempted self-connection', req);
       await logApiCall(userId, '/gpt-api-create-connection', req.method, 400, null, null, 'Cannot connect to yourself');
       return new Response(JSON.stringify({ error: 'Cannot connect to yourself' }), {
         status: 400,
@@ -142,6 +145,11 @@ serve(async (req) => {
       },
       isNewConversation: !existingConversation
     };
+
+    // Audit successful connection creation
+    if (!existingConversation) {
+      await auditConnectionCreated(userId, conversationId, targetUserId, req);
+    }
 
     await logApiCall(userId, '/gpt-api-create-connection', req.method, 200, requestBody, response);
 

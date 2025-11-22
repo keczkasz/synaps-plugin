@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { verifyOAuthToken, logApiCall } from '../_shared/oauth-middleware.ts';
+import { createAuditLog } from '../_shared/audit.ts';
 // ChatGPT GPT API - Get User Profile
 
 const corsHeaders = {
@@ -16,7 +17,7 @@ serve(async (req) => {
 
   try {
     // Verify OAuth token
-    const authResult = await verifyOAuthToken(req.headers.get('Authorization'));
+    const authResult = await verifyOAuthToken(req.headers.get('Authorization'), req, '/gpt-api-get-profile');
     
     if (authResult.error) {
       await logApiCall('unknown', '/gpt-api-get-profile', req.method, authResult.status, null, null, authResult.error);
@@ -52,12 +53,22 @@ serve(async (req) => {
       userId: profile.id,
       displayName: profile.display_name,
       interests: profile.interests || [],
-      currentMood: profile.current_mood,
+      currentMood: profile.mood,
       currentIntentions: profile.current_intentions,
-      conversationTopics: profile.conversation_topics || [],
+      conversationTopics: profile.last_conversation_topics || [],
       bio: profile.bio,
       createdAt: profile.created_at
     };
+
+    // Audit profile view
+    await createAuditLog({
+      userId,
+      action: 'profile_view',
+      resourceType: 'profile',
+      resourceId: profile.id,
+      status: 'success',
+      request: req
+    });
 
     await logApiCall(userId, '/gpt-api-get-profile', req.method, 200, null, response);
 
