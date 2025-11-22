@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Sparkles, Facebook, Instagram } from "lucide-react";
+import { MessageSquare, Sparkles, Facebook, Instagram, Bot } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
@@ -29,28 +29,36 @@ interface Platform {
 
 const platforms: Platform[] = [
   {
+    id: "synaps-gpt",
+    name: "Synaps GPT",
+    icon: Bot,
+    color: "text-purple-500",
+    status: "available",
+    description: "Connect with Synaps Custom GPT to find meaningful connections through conversation",
+  },
+  {
     id: "chatgpt-memory",
-    name: "ChatGPT Memory",
+    name: "ChatGPT Memory Import",
     icon: MessageSquare,
     color: "text-green-500",
     status: "available",
-    description: "Import your ChatGPT conversation memory to enhance your profile and connections",
+    description: "Import your ChatGPT memory to enrich your Synaps profile",
   },
   {
-    id: "chatgpt",
-    name: "ChatGPT",
-    icon: MessageSquare,
-    color: "text-green-500",
-    status: "available",
-    description: "Connect with OpenAI's ChatGPT for advanced AI conversations",
-  },
-  {
-    id: "gemini",
-    name: "Google Gemini",
+    id: "gemini-memory",
+    name: "Gemini Memory Import",
     icon: Sparkles,
     color: "text-blue-500",
     status: "available",
-    description: "Integrate Google's Gemini AI for intelligent responses",
+    description: "Import your Google Gemini memory for better matching",
+  },
+  {
+    id: "claude",
+    name: "Claude",
+    icon: MessageSquare,
+    color: "text-orange-500",
+    status: "coming-soon",
+    description: "Anthropic Claude integration coming soon",
   },
   {
     id: "facebook",
@@ -79,9 +87,12 @@ export function PlatformIntegrations() {
   const [isImportingGemini, setIsImportingGemini] = useState(false);
 
   const handleConnect = (platformId: string) => {
-    if (platformId === "chatgpt-memory") {
+    if (platformId === "synaps-gpt") {
+      window.open("https://chatgpt.com/g/g-6915c7d0d5948191ba2a78d05e4758b8-synaps", "_blank");
+      toast.success("Opening Synaps GPT...");
+    } else if (platformId === "chatgpt-memory") {
       setShowMemoryDialog(true);
-    } else if (platformId === "gemini") {
+    } else if (platformId === "gemini-memory") {
       setShowGeminiDialog(true);
     } else {
       toast.success(`Connecting to ${platformId}...`);
@@ -225,7 +236,7 @@ export function PlatformIntegrations() {
       <AlertDialog open={showGeminiDialog} onOpenChange={setShowGeminiDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Import Google Gemini Memory</AlertDialogTitle>
+            <AlertDialogTitle>Import Gemini Memory</AlertDialogTitle>
             <AlertDialogDescription className="space-y-4">
               <div className="space-y-3">
                 <p className="text-sm font-medium">How to import:</p>

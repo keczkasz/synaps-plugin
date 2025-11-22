@@ -105,9 +105,9 @@ export function ProfileOverview() {
 
   const getDefaultInsight = (type: string) => {
     const defaults = {
-      emotional_patterns: "Continue conversations with your AI companion to discover your emotional patterns and preferences.",
-      communication_style: "Your unique communication style will be revealed through ongoing AI conversations.", 
-      connection_goals: "Chat with your AI companion to help identify your ideal connection goals and relationship preferences."
+      emotional_patterns: "Continue conversations with Synaps to discover your emotional patterns and preferences.",
+      communication_style: "Your unique communication style will be revealed through ongoing conversations.", 
+      connection_goals: "Chat with Synaps to help identify your ideal connection goals and relationship preferences."
     };
     return defaults[type as keyof typeof defaults];
   };
@@ -155,7 +155,7 @@ export function ProfileOverview() {
                 Welcome Back{profile?.display_name ? `, ${profile.display_name}` : ''}!
               </h1>
               <p className="text-muted-foreground">
-                Your AI companion is learning more about you with every conversation
+                Synaps is learning more about you with every conversation
               </p>
             </div>
             

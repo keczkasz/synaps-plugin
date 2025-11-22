@@ -195,8 +195,8 @@ export function AIChatInterface() {
               <Sparkles className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-foreground">AI Companion</h2>
-              <p className="text-sm text-muted-foreground">Connect Your Language Model</p>
+              <h2 className="text-lg font-semibold text-foreground">Synaps Connection Assistant</h2>
+              <p className="text-sm text-muted-foreground">Connect to Custom GPTs</p>
             </div>
           </div>
           <Button
