@@ -14,6 +14,21 @@ export function ConnectionSuggestions() {
   const navigate = useNavigate();
   const [creatingConversation, setCreatingConversation] = useState<string | null>(null);
 
+  // Check for search topic from URL parameters
+  const searchParams = new URLSearchParams(window.location.search);
+  const urlTopic = searchParams.get('topic');
+  
+  // Filter connections by topic if provided
+  const filteredConnections = urlTopic
+    ? connections.filter(conn => 
+        conn.interests.some(interest => 
+          interest.toLowerCase().includes(urlTopic.toLowerCase()) ||
+          urlTopic.toLowerCase().includes(interest.toLowerCase())
+        ) ||
+        conn.aiReasoning.toLowerCase().includes(urlTopic.toLowerCase())
+      )
+    : connections;
+
   const handleStartConversation = async (connection: Connection) => {
     try {
       setCreatingConversation(connection.id);
@@ -65,18 +80,32 @@ export function ConnectionSuggestions() {
         </div>
         <h2 className="text-2xl font-bold text-foreground">Perfect Matches for You</h2>
         <p className="text-muted-foreground max-w-lg mx-auto">
-          {userIntentions?.current_intentions 
-            ? `Based on your interest in "${userIntentions.current_intentions}", here are your perfect matches:`
-            : "Here are people who might be perfect for meaningful conversations."
+          {urlTopic 
+            ? `People interested in ${urlTopic}:`
+            : userIntentions?.current_intentions 
+              ? `Based on your interest in "${userIntentions.current_intentions}", here are your perfect matches:`
+              : "Here are people who might be perfect for meaningful conversations."
           }
         </p>
       </div>
 
       {/* Suggestions - Tinder-style Carousel */}
-      <div className="relative">
-        <Carousel className="w-full max-w-2xl mx-auto">
-          <CarouselContent>
-            {connections.map((connection) => (
+      {filteredConnections.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground mb-4">
+            {urlTopic 
+              ? `No matches found for "${urlTopic}" yet. Try different interests!`
+              : "No connections available at the moment."}
+          </p>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Refresh
+          </Button>
+        </div>
+      ) : (
+        <div className="relative">
+          <Carousel className="w-full max-w-2xl mx-auto">
+            <CarouselContent>
+              {filteredConnections.map((connection) => (
               <CarouselItem key={connection.id} className="pl-4">
                 <Card className="p-6 shadow-card border-0 bg-card/80 backdrop-blur-sm hover:shadow-floating transition-all duration-300 hover:scale-105 cursor-pointer">
                   <div className="flex gap-6">
@@ -154,10 +183,11 @@ export function ConnectionSuggestions() {
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className="left-4" />
-          <CarouselNext className="right-4" />
-        </Carousel>
-      </div>
+            <CarouselPrevious className="left-4" />
+            <CarouselNext className="right-4" />
+          </Carousel>
+        </div>
+      )}
 
       {/* Browse More */}
       <div className="text-center pt-6">

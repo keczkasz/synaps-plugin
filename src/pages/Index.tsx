@@ -15,6 +15,22 @@ const Index = () => {
   const [hasStarted, setHasStarted] = useState(false);
   const { user, loading, signOut } = useAuth();
 
+  // Check URL parameters for incoming searches from ChatGPT
+  useEffect(() => {
+    if (!loading && user) {
+      const params = new URLSearchParams(window.location.search);
+      const view = params.get('view');
+      const topic = params.get('topic');
+      
+      if (view === 'connections' || topic) {
+        setHasStarted(true);
+        setCurrentSection('connections');
+        // Clear URL parameters after processing
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, [loading, user]);
+
   // Redirect to auth if not authenticated
   if (!loading && !user) {
     return <Navigate to="/auth" replace />;

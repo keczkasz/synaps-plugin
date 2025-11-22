@@ -16,20 +16,35 @@ serve(async (req) => {
   }
 
   try {
+    const requestBody = await req.json();
+    const { topic, mood, conversationType, limit = 5 } = requestBody;
+    
     // Verify OAuth token
     const authResult = await verifyOAuthToken(req.headers.get('Authorization'), req, '/gpt-api-find-matches');
     
     if (authResult.error) {
-      await logApiCall('unknown', '/gpt-api-find-matches', req.method, authResult.status, null, null, authResult.error);
-      return new Response(JSON.stringify({ error: authResult.error }), {
-        status: authResult.status,
+      await logApiCall('unknown', '/gpt-api-find-matches', req.method, authResult.status, requestBody, null, authResult.error);
+      
+      // Build app URL with search parameters
+      const appUrl = new URL('https://vkcxoxoxrpllcbyhdyam.netlify.app/');
+      if (topic) appUrl.searchParams.set('topic', topic);
+      if (mood) appUrl.searchParams.set('mood', mood);
+      if (conversationType) appUrl.searchParams.set('type', conversationType);
+      appUrl.searchParams.set('view', 'connections');
+      
+      return new Response(JSON.stringify({ 
+        error: 'Please sign in to Synaps to see your matches',
+        loginRequired: true,
+        appUrl: appUrl.toString(),
+        message: `Sign in to Synaps to find people interested in ${topic || 'connecting'}!`,
+        searchCriteria: { topic, mood, conversationType }
+      }), {
+        status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const userId = authResult.userId!;
-    const requestBody = await req.json();
-    const { topic, mood, conversationType, limit = 5 } = requestBody;
 
     // Validate inputs
     const errors: ValidationError[] = [];
