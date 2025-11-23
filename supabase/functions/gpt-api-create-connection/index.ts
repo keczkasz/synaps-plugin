@@ -132,8 +132,9 @@ serve(async (req) => {
         });
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const conversationUrl = `${supabaseUrl.replace('.supabase.co', '')}/chat?conversation=${conversationId}`;
+    // Construct the app URL from the request origin or use a fallback
+    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'https://synaps.lovable.app';
+    const conversationUrl = `${origin}/chat?conversation=${conversationId}`;
 
     const response = {
       success: true,

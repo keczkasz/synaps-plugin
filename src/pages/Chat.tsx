@@ -66,11 +66,14 @@ const Chat = () => {
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // Get conversation ID from query parameter
+  const conversationId = new URLSearchParams(window.location.search).get('conversation');
+
   useEffect(() => {
-    if (userId && user) {
+    if ((userId || conversationId) && user) {
       fetchConversationData();
     }
-  }, [userId, user]);
+  }, [userId, conversationId, user]);
 
   const fetchConversationData = async () => {
     try {
@@ -93,6 +96,9 @@ const Chat = () => {
         }
       }
 
+      // Prioritize conversationId from query parameter
+      const targetId = conversationId || userId;
+
       // Try to fetch conversation by ID first
       const { data: convById } = await supabase
         .from('conversations')
@@ -105,13 +111,13 @@ const Chat = () => {
             created_at
           )
         `)
-        .eq('id', userId)
+        .eq('id', targetId)
         .single();
 
       if (convById) {
         conversationData = convById;
-      } else {
-        // If not found by ID, try to find conversation between current user and the other user
+      } else if (userId && !conversationId) {
+        // If not found by ID and we have a userId, try to find conversation between current user and the other user
         const { data: convByUsers } = await supabase
           .from('conversations')
           .select(`
@@ -202,7 +208,7 @@ const Chat = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Ładowanie rozmowy...</p>
+          <p className="text-muted-foreground">Loading conversation...</p>
         </div>
       </div>
     );
@@ -212,8 +218,8 @@ const Chat = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Rozmowa nie została znaleziona</h1>
-          <Button onClick={() => navigate("/")}>Powrót do strony głównej</Button>
+          <h1 className="text-2xl font-bold text-foreground mb-4">Conversation not found</h1>
+          <Button onClick={() => navigate("/")}>Back to home</Button>
         </div>
       </div>
     );
@@ -224,7 +230,7 @@ const Chat = () => {
   const displayAvatar = displayUser?.avatar_url || displayUser?.avatar;
   const displayMood = displayUser?.mood;
   const displayInterests = displayUser?.interests || [];
-  const displayReasoning = connectionData?.ai_reasoning || connection?.aiReasoning || `Połączyliśmy was ze względu na wspólne zainteresowania i podobne cele. Mamy nadzieję, że będziecie mieli świetną rozmowę!`;
+  const displayReasoning = connectionData?.ai_reasoning || connection?.aiReasoning || `We connected you based on shared interests and similar goals. Hope you have a great conversation!`;
   
   // Calculate shared interests
   const myInterests = currentUserProfile?.interests || [];
@@ -282,7 +288,7 @@ const Chat = () => {
               <Badge variant="secondary" className="text-xs">{displayMood}</Badge>
               {compatibilityScore && (
                 <Badge variant="default" className="text-xs">
-                  {compatibilityScore}% zgodności
+                  {compatibilityScore}% match
                 </Badge>
               )}
             </h3>
@@ -290,7 +296,7 @@ const Chat = () => {
             
             {sharedInterests.length > 0 && (
               <div className="mb-3">
-                <p className="text-xs font-medium text-foreground mb-2">Wspólne zainteresowania:</p>
+                <p className="text-xs font-medium text-foreground mb-2">Shared interests:</p>
                 <div className="flex flex-wrap gap-1">
                   {sharedInterests.map((interest: string, index: number) => (
                     <Badge key={index} variant="default" className="text-xs">
@@ -302,7 +308,7 @@ const Chat = () => {
             )}
             
             <div>
-              <p className="text-xs font-medium text-foreground mb-2">Wszystkie zainteresowania {displayName}:</p>
+              <p className="text-xs font-medium text-foreground mb-2">All interests of {displayName}:</p>
               <div className="flex flex-wrap gap-1">
                 {displayInterests.map((interest: string, index: number) => (
                   <Badge key={index} variant="outline" className="text-xs">
