@@ -1,5 +1,7 @@
 # Synaps
 
+https://synaps-plugin.lovable.app
+
 ## Copyright
 
 Copyright © 2025 Dawid Konopka. All rights reserved.
