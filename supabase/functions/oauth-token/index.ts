@@ -14,6 +14,9 @@ serve(async (req) => {
   }
 
   try {
+    console.log('=== OAuth Token Request ===');
+    console.log('Method:', req.method);
+    
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -24,6 +27,9 @@ serve(async (req) => {
     const clientId = formData.get('client_id');
     const clientSecret = formData.get('client_secret');
 
+    console.log('Grant Type:', grantType);
+    console.log('Client ID:', clientId);
+
     // Verify client credentials
     const { data: client, error: clientError } = await supabase
       .from('gpt_oauth_clients')
@@ -33,6 +39,7 @@ serve(async (req) => {
       .single();
 
     if (clientError || !client) {
+      console.error('Client verification failed:', clientError);
       return new Response(JSON.stringify({ 
         error: 'invalid_client',
         error_description: 'Invalid client credentials'
@@ -42,10 +49,16 @@ serve(async (req) => {
       });
     }
 
+    console.log('Client verified:', client.client_name);
+
     // Handle authorization_code grant
     if (grantType === 'authorization_code') {
+      console.log('Processing authorization_code grant');
       const code = formData.get('code');
       const redirectUri = formData.get('redirect_uri');
+
+      console.log('Authorization code:', code?.toString().substring(0, 8) + '...');
+      console.log('Redirect URI:', redirectUri);
 
       // Verify authorization code
       const { data: authCode, error: codeError } = await supabase
@@ -57,6 +70,7 @@ serve(async (req) => {
         .single();
 
       if (codeError || !authCode) {
+        console.error('Authorization code verification failed:', codeError);
         return new Response(JSON.stringify({ 
           error: 'invalid_grant',
           error_description: 'Invalid or expired authorization code'
@@ -66,8 +80,11 @@ serve(async (req) => {
         });
       }
 
+      console.log('Authorization code verified for user:', authCode.user_id);
+
       // Check if code is expired
       if (new Date(authCode.expires_at) < new Date()) {
+        console.error('Authorization code expired:', authCode.expires_at);
         return new Response(JSON.stringify({ 
           error: 'invalid_grant',
           error_description: 'Authorization code expired'
@@ -79,6 +96,10 @@ serve(async (req) => {
 
       // Verify redirect URI matches
       if (authCode.redirect_uri !== redirectUri) {
+        console.error('Redirect URI mismatch:', {
+          stored: authCode.redirect_uri,
+          provided: redirectUri
+        });
         return new Response(JSON.stringify({ 
           error: 'invalid_grant',
           error_description: 'Redirect URI mismatch'
@@ -89,6 +110,7 @@ serve(async (req) => {
       }
 
       // Mark code as used
+      console.log('Marking authorization code as used');
       await supabase
         .from('gpt_oauth_codes')
         .update({ used: true })
@@ -99,6 +121,11 @@ serve(async (req) => {
       const refreshToken = crypto.randomUUID();
       const expiresIn = 3600; // 1 hour
       const expiresAt = new Date(Date.now() + expiresIn * 1000);
+
+      console.log('Creating access token:', {
+        userId: authCode.user_id,
+        expiresAt: expiresAt.toISOString()
+      });
 
       const { error: tokenError } = await supabase
         .from('gpt_oauth_tokens')
@@ -122,6 +149,8 @@ serve(async (req) => {
         });
       }
 
+      console.log('Tokens created successfully');
+
       return new Response(JSON.stringify({
         access_token: accessToken,
         token_type: 'Bearer',
@@ -135,6 +164,7 @@ serve(async (req) => {
 
     // Handle refresh_token grant
     if (grantType === 'refresh_token') {
+      console.log('Processing refresh_token grant');
       const refreshToken = formData.get('refresh_token');
 
       const { data: token, error: tokenError } = await supabase
@@ -146,6 +176,7 @@ serve(async (req) => {
         .single();
 
       if (tokenError || !token) {
+        console.error('Refresh token verification failed:', tokenError);
         return new Response(JSON.stringify({ 
           error: 'invalid_grant',
           error_description: 'Invalid refresh token'
@@ -155,10 +186,14 @@ serve(async (req) => {
         });
       }
 
+      console.log('Refresh token verified for user:', token.user_id);
+
       // Generate new access token
       const newAccessToken = crypto.randomUUID();
       const expiresIn = 3600; // 1 hour
       const expiresAt = new Date(Date.now() + expiresIn * 1000);
+
+      console.log('Generating new access token');
 
       await supabase
         .from('gpt_oauth_tokens')
@@ -167,6 +202,8 @@ serve(async (req) => {
           expires_at: expiresAt.toISOString()
         })
         .eq('refresh_token', refreshToken);
+
+      console.log('Access token refreshed successfully');
 
       return new Response(JSON.stringify({
         access_token: newAccessToken,

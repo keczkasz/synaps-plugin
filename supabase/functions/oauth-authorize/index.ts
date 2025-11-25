@@ -14,6 +14,10 @@ serve(async (req) => {
   }
 
   try {
+    console.log('=== OAuth Authorize Request ===');
+    console.log('Method:', req.method);
+    console.log('URL:', req.url);
+    
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -26,8 +30,17 @@ serve(async (req) => {
     const scope = url.searchParams.get('scope') || 'profile connections';
     const responseType = url.searchParams.get('response_type');
 
+    console.log('OAuth Parameters:', {
+      clientId,
+      redirectUri,
+      state,
+      scope,
+      responseType
+    });
+
     // Validate required parameters
     if (!clientId || !redirectUri || !responseType || responseType !== 'code') {
+      console.error('Missing or invalid parameters');
       return new Response(JSON.stringify({ 
         error: 'invalid_request',
         error_description: 'Missing or invalid required parameters'
@@ -38,6 +51,7 @@ serve(async (req) => {
     }
 
     // Verify client exists and redirect URI is valid
+    console.log('Verifying OAuth client...');
     const { data: client, error: clientError } = await supabase
       .from('gpt_oauth_clients')
       .select('*')
@@ -45,6 +59,7 @@ serve(async (req) => {
       .single();
 
     if (clientError || !client) {
+      console.error('Client not found:', clientError);
       return new Response(JSON.stringify({ 
         error: 'invalid_client',
         error_description: 'Client not found'
@@ -54,7 +69,11 @@ serve(async (req) => {
       });
     }
 
+    console.log('Client found:', client.client_name);
+    console.log('Registered redirect URIs:', client.redirect_uris);
+
     if (!client.redirect_uris.includes(redirectUri)) {
+      console.error('Redirect URI mismatch. Provided:', redirectUri);
       return new Response(JSON.stringify({ 
         error: 'invalid_request',
         error_description: 'Invalid redirect URI'
@@ -66,8 +85,10 @@ serve(async (req) => {
 
     // For GET requests, return HTML consent page
     if (req.method === 'GET') {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-      const consentPageUrl = `${supabaseUrl.replace('.supabase.co', '')}/oauth-consent?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state || ''}&scope=${encodeURIComponent(scope)}`;
+      const appUrl = Deno.env.get('APP_URL') ?? 'https://synaps-plugin.lovable.app';
+      const consentPageUrl = `${appUrl}/oauth-consent?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state || ''}&scope=${encodeURIComponent(scope)}`;
+      
+      console.log('Redirecting to consent page:', consentPageUrl);
       
       return new Response(null, {
         status: 302,
@@ -80,10 +101,14 @@ serve(async (req) => {
 
     // For POST requests (user approved), create authorization code
     if (req.method === 'POST') {
+      console.log('Processing POST request (user consent)');
       const { approved, userId } = await req.json();
+
+      console.log('User decision:', { approved, userId });
 
       if (!approved) {
         const errorUrl = `${redirectUri}?error=access_denied&error_description=User denied access${state ? `&state=${state}` : ''}`;
+        console.log('User denied access, redirecting to:', errorUrl);
         return new Response(JSON.stringify({ redirect: errorUrl }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -92,6 +117,12 @@ serve(async (req) => {
       // Generate authorization code
       const code = crypto.randomUUID();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      console.log('Creating authorization code:', {
+        code: code.substring(0, 8) + '...',
+        userId,
+        expiresAt: expiresAt.toISOString()
+      });
 
       const { error: codeError } = await supabase
         .from('gpt_oauth_codes')
@@ -116,6 +147,7 @@ serve(async (req) => {
       }
 
       const successUrl = `${redirectUri}?code=${code}${state ? `&state=${state}` : ''}`;
+      console.log('Authorization successful, redirecting to:', successUrl);
       return new Response(JSON.stringify({ redirect: successUrl }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
