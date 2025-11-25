@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Send, Phone, Video, MoreHorizontal, Sparkles } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -174,7 +174,29 @@ const Chat = () => {
   // Use mock data if no real conversation found
   const connection = !otherUser && userId ? mockConnections[userId.replace('mock-user-', '') as keyof typeof mockConnections] : null;
 
-  const handleSendMessage = async () => {
+  // Memoize display values - MUST be called before early returns
+  const displayUser = useMemo(() => otherUser || connection, [otherUser, connection]);
+  const displayName = useMemo(() => displayUser?.display_name || displayUser?.name, [displayUser]);
+  const displayAvatar = useMemo(() => displayUser?.avatar_url || displayUser?.avatar, [displayUser]);
+  const displayMood = displayUser?.mood;
+  const displayInterests = useMemo(() => displayUser?.interests || [], [displayUser]);
+  const displayReasoning = useMemo(() => 
+    connectionData?.ai_reasoning || connection?.aiReasoning || `Połączyliśmy was ze względu na wspólne zainteresowania i podobne cele. Mamy nadzieję, że będziecie mieli świetną rozmowę!`,
+    [connectionData, connection]
+  );
+  
+  // Memoize shared interests calculation
+  const sharedInterests = useMemo(() => {
+    const myInterests = currentUserProfile?.interests || [];
+    return myInterests.filter((interest: string) => 
+      displayInterests.some((theirInterest: string) => 
+        theirInterest.toLowerCase() === interest.toLowerCase()
+      )
+    );
+  }, [currentUserProfile, displayInterests]);
+  const compatibilityScore = connectionData?.compatibility_score;
+
+  const handleSendMessage = useCallback(async () => {
     if (!message.trim() || !conversation || !user) return;
 
     try {
@@ -196,13 +218,14 @@ const Chat = () => {
         created_at: new Date().toISOString()
       };
       
-      setMessages([...messages, newMessage]);
+      setMessages(prev => [...prev, newMessage]);
       setMessage("");
     } catch (error) {
       console.error('Error sending message:', error);
     }
-  };
+  }, [message, conversation, user]);
 
+  // Early returns for loading/error states - AFTER all hooks
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -224,23 +247,6 @@ const Chat = () => {
       </div>
     );
   }
-
-  const displayUser = otherUser || connection;
-  const displayName = displayUser?.display_name || displayUser?.name;
-  const displayAvatar = displayUser?.avatar_url || displayUser?.avatar;
-  const displayMood = displayUser?.mood;
-  const displayInterests = displayUser?.interests || [];
-  const displayReasoning = connectionData?.ai_reasoning || connection?.aiReasoning || `Połączyliśmy was ze względu na wspólne zainteresowania i podobne cele. Mamy nadzieję, że będziecie mieli świetną rozmowę!`;
-  
-  // Calculate shared interests
-  const myInterests = currentUserProfile?.interests || [];
-  const theirInterests = displayInterests;
-  const sharedInterests = myInterests.filter((interest: string) => 
-    theirInterests.some((theirInterest: string) => 
-      theirInterest.toLowerCase() === interest.toLowerCase()
-    )
-  );
-  const compatibilityScore = connectionData?.compatibility_score;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

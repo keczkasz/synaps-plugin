@@ -1,3 +1,4 @@
+import { memo, useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,14 +8,99 @@ import { MessageCircle, Heart, Sparkles, Users, Loader2 } from "lucide-react";
 import { useConnectionMatching, type Connection } from "@/hooks/useConnectionMatching";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+
+// Memoized connection card for better render performance
+const ConnectionCard = memo(({ 
+  connection, 
+  creatingConversation, 
+  onStartConversation 
+}: { 
+  connection: Connection; 
+  creatingConversation: string | null;
+  onStartConversation: (connection: Connection) => void;
+}) => (
+  <Card className="p-6 shadow-card border-0 bg-card/80 backdrop-blur-sm hover:shadow-floating transition-all duration-300 hover:scale-105 cursor-pointer">
+    <div className="flex gap-6">
+      {/* Avatar and basic info */}
+      <div className="flex-shrink-0 space-y-3">
+        <Avatar className="w-20 h-20 ring-4 ring-border/20">
+          <AvatarImage src={connection.avatar} loading="lazy" />
+          <AvatarFallback className="bg-gradient-primary text-white text-xl font-medium">
+            {connection.name.split(' ').map(n => n[0]).join('')}
+          </AvatarFallback>
+        </Avatar>
+        <div className="text-center">
+          <div className="text-xs text-muted-foreground">Compatibility</div>
+          <div className="text-xl font-bold text-primary">{connection.compatibilityScore}%</div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 space-y-4">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <h3 className="text-xl font-semibold text-foreground">{connection.name}</h3>
+            <Badge variant="outline" className="rounded-full text-xs bg-emotion-calm border-0">
+              {connection.mood}
+            </Badge>
+          </div>
+          <span className="text-sm text-muted-foreground">Active {connection.lastActive}</span>
+          
+          {/* Interests */}
+          <div className="flex gap-2 mt-3">
+            {connection.interests.map((interest) => (
+              <Badge key={interest} variant="secondary" className="rounded-full text-xs">
+                {interest}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        {/* AI Reasoning */}
+        <div className="p-4 rounded-2xl bg-gradient-warm">
+          <div className="flex items-start gap-2">
+            <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+            <div>
+              <div className="text-xs font-medium text-primary mb-1">AI Insight</div>
+              <p className="text-sm text-foreground leading-relaxed">{connection.aiReasoning}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <Button 
+            className="rounded-xl flex-1" 
+            size="sm" 
+            onClick={() => onStartConversation(connection)}
+            disabled={creatingConversation === connection.id}
+          >
+            {creatingConversation === connection.id ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <MessageCircle className="w-4 h-4 mr-2" />
+            )}
+            {creatingConversation === connection.id ? 'Tworzenie...' : 'Start Conversation'}
+          </Button>
+          <Button variant="outline" size="sm" className="rounded-xl">
+            <Heart className="w-4 h-4" />
+          </Button>
+          <Button variant="outline" size="sm" className="rounded-xl">
+            <Users className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  </Card>
+));
+ConnectionCard.displayName = "ConnectionCard";
 
 export function ConnectionSuggestions() {
   const { connections, userIntentions, loading } = useConnectionMatching();
   const navigate = useNavigate();
   const [creatingConversation, setCreatingConversation] = useState<string | null>(null);
 
-  const handleStartConversation = async (connection: Connection) => {
+  const handleStartConversation = useCallback(async (connection: Connection) => {
     try {
       setCreatingConversation(connection.id);
       
@@ -43,7 +129,7 @@ export function ConnectionSuggestions() {
     } finally {
       setCreatingConversation(null);
     }
-  };
+  }, [navigate]);
 
   if (loading) {
     return (
@@ -78,79 +164,11 @@ export function ConnectionSuggestions() {
           <CarouselContent>
             {connections.map((connection) => (
               <CarouselItem key={connection.id} className="pl-4">
-                <Card className="p-6 shadow-card border-0 bg-card/80 backdrop-blur-sm hover:shadow-floating transition-all duration-300 hover:scale-105 cursor-pointer">
-                  <div className="flex gap-6">
-                    {/* Avatar and basic info */}
-                    <div className="flex-shrink-0 space-y-3">
-                      <Avatar className="w-20 h-20 ring-4 ring-border/20">
-                        <AvatarImage src={connection.avatar} />
-                        <AvatarFallback className="bg-gradient-primary text-white text-xl font-medium">
-                          {connection.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="text-center">
-                        <div className="text-xs text-muted-foreground">Compatibility</div>
-                        <div className="text-xl font-bold text-primary">{connection.compatibilityScore}%</div>
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 space-y-4">
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-semibold text-foreground">{connection.name}</h3>
-                          <Badge variant="outline" className="rounded-full text-xs bg-emotion-calm border-0">
-                            {connection.mood}
-                          </Badge>
-                        </div>
-                        <span className="text-sm text-muted-foreground">Active {connection.lastActive}</span>
-                        
-                        {/* Interests */}
-                        <div className="flex gap-2 mt-3">
-                          {connection.interests.map((interest) => (
-                            <Badge key={interest} variant="secondary" className="rounded-full text-xs">
-                              {interest}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* AI Reasoning */}
-                      <div className="p-4 rounded-2xl bg-gradient-warm">
-                        <div className="flex items-start gap-2">
-                          <Sparkles className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                          <div>
-                            <div className="text-xs font-medium text-primary mb-1">AI Insight</div>
-                            <p className="text-sm text-foreground leading-relaxed">{connection.aiReasoning}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex gap-3">
-                        <Button 
-                          className="rounded-xl flex-1" 
-                          size="sm" 
-                          onClick={() => handleStartConversation(connection)}
-                          disabled={creatingConversation === connection.id}
-                        >
-                          {creatingConversation === connection.id ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          ) : (
-                            <MessageCircle className="w-4 h-4 mr-2" />
-                          )}
-                          {creatingConversation === connection.id ? 'Tworzenie...' : 'Start Conversation'}
-                        </Button>
-                        <Button variant="outline" size="sm" className="rounded-xl">
-                          <Heart className="w-4 h-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" className="rounded-xl">
-                          <Users className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
+                <ConnectionCard
+                  connection={connection}
+                  creatingConversation={creatingConversation}
+                  onStartConversation={handleStartConversation}
+                />
               </CarouselItem>
             ))}
           </CarouselContent>

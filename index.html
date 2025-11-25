@@ -6,9 +6,30 @@
     <title>Synaps</title>
     <meta name="description" content="Connect with others based on your real-time emotional state and goals through AI-guided conversations" />
     <meta name="author" content="Synaps" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Preconnect to external domains for faster loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Preload critical font weights (400 and 500 are most used) -->
+    <link 
+      rel="preload" 
+      href="https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2" 
+      as="font" 
+      type="font/woff2" 
+      crossorigin 
+    />
+    
+    <!-- Load font with display=swap for FOUT instead of FOIT -->
+    <link 
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" 
+      rel="stylesheet" 
+      media="print" 
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    </noscript>
 
     <meta property="og:title" content="Synaps - AI-Powered Connection Platform" />
     <meta property="og:description" content="Connect with others based on your real-time emotional state and goals through AI-guided conversations" />
@@ -18,10 +39,41 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://images.unsplash.com" />
+    
+    <!-- Inline critical CSS for initial render -->
+    <style>
+      /* Critical CSS for initial paint */
+      body { margin: 0; font-family: Inter, system-ui, sans-serif; }
+      #root { min-height: 100vh; }
+      .initial-loader {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: hsl(0 0% 99%);
+      }
+      .initial-loader .spinner {
+        width: 32px;
+        height: 32px;
+        border: 2px solid hsl(220 8% 92%);
+        border-top-color: hsl(250 30% 45%);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Initial loader shown before React hydrates -->
+      <div class="initial-loader">
+        <div class="spinner"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

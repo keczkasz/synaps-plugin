@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { PlatformIntegrations } from "./PlatformIntegrations";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 
 interface Message {
   id: string;
@@ -16,6 +16,41 @@ interface Message {
   isAI: boolean;
   timestamp: Date;
 }
+
+// Memoized message component
+const ChatMessage = memo(({ message }: { message: Message }) => (
+  <div className={`flex gap-4 ${message.isAI ? "justify-start" : "justify-end"}`}>
+    {message.isAI && (
+      <Avatar className="w-10 h-10">
+        <AvatarFallback className="bg-primary-soft text-primary">
+          <Sparkles className="w-5 h-5" />
+        </AvatarFallback>
+      </Avatar>
+    )}
+    
+    <Card className={`max-w-md p-4 shadow-soft border-0 ${
+      message.isAI 
+        ? "bg-card/80 backdrop-blur-sm" 
+        : "bg-primary text-primary-foreground shadow-card"
+    }`}>
+      <p className="text-sm leading-relaxed">{message.content}</p>
+      <span className={`text-xs mt-2 block ${
+        message.isAI ? "text-muted-foreground" : "text-primary-foreground/70"
+      }`}>
+        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      </span>
+    </Card>
+
+    {!message.isAI && (
+      <Avatar className="w-10 h-10">
+        <AvatarFallback className="bg-secondary text-secondary-foreground">
+          You
+        </AvatarFallback>
+      </Avatar>
+    )}
+  </div>
+));
+ChatMessage.displayName = "ChatMessage";
 
 export function AIChatInterface() {
   const { user } = useAuth();
@@ -107,7 +142,7 @@ export function AIChatInterface() {
     }
   };
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim() || isLoading || !user || !conversationId) return;
 
     const userMessage: Message = {
@@ -183,7 +218,7 @@ export function AIChatInterface() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [inputValue, isLoading, user, conversationId, messages, toast]);
 
   return (
     <div className="flex flex-col h-full max-w-4xl mx-auto">
@@ -224,39 +259,7 @@ export function AIChatInterface() {
           </div>
         ) : (
           messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex gap-4 ${message.isAI ? "justify-start" : "justify-end"}`}
-          >
-            {message.isAI && (
-              <Avatar className="w-10 h-10">
-                <AvatarFallback className="bg-primary-soft text-primary">
-                  <Sparkles className="w-5 h-5" />
-                </AvatarFallback>
-              </Avatar>
-            )}
-            
-            <Card className={`max-w-md p-4 shadow-soft border-0 ${
-              message.isAI 
-                ? "bg-card/80 backdrop-blur-sm" 
-                : "bg-primary text-primary-foreground shadow-card"
-            }`}>
-              <p className="text-sm leading-relaxed">{message.content}</p>
-              <span className={`text-xs mt-2 block ${
-                message.isAI ? "text-muted-foreground" : "text-primary-foreground/70"
-              }`}>
-                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </Card>
-
-            {!message.isAI && (
-              <Avatar className="w-10 h-10">
-                <AvatarFallback className="bg-secondary text-secondary-foreground">
-                  You
-                </AvatarFallback>
-              </Avatar>
-            )}
-          </div>
+            <ChatMessage key={message.id} message={message} />
           ))
         )}
       </div>
